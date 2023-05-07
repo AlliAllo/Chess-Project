@@ -1,0 +1,10 @@
+.chessPiece {
+    user-select: none;
+}
+.chessPiece:hover {
+    cursor: grab;
+}
+  
+.chessPiece:active {
+    cursor: grabbing;
+}

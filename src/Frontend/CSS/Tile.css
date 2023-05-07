@@ -1,0 +1,27 @@
+.tile .chessPiece:hover {
+    cursor: grab;
+}
+  
+.tile .chessPiece:active {
+    cursor: grabbing;
+}
+
+img {
+    user-select: none;
+  }
+
+.tile .centered{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+} 
+
+.legalTile {
+    position: absolute;
+    width: 25%;
+    height: 25%;
+    border-radius: 50%;
+    opacity: 0.6;
+}
+  

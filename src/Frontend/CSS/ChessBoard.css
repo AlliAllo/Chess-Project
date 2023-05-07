@@ -1,0 +1,20 @@
+.chessboard {
+    width: 800px;
+    height: 800px;
+    display: grid;
+    grid-template-columns: repeat(8, 100px);
+    grid-template-rows: repeat(8, 100px);
+    justify-content: center;
+    align-items: center;
+  }
+.chessboard .tile .chessPiece:hover {
+    cursor: grab;
+}
+  
+.chessboard .tile .chessPiece:active {
+    cursor: grabbing;
+}
+
+.ghostPiece{
+    pointer-events: none;
+}

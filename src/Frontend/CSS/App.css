@@ -1,0 +1,20 @@
+
+.notationSymbols {
+  font-size: 21px
+}
+
+.window {
+  width: 1500;
+  height: 920px;
+  background-color: rgb(49 46 43);
+  justify-content: center;
+  align-items: center;
+}
+.chessPiece:hover {
+  cursor: grab;
+}
+
+.chessPiece:active {
+  cursor: grabbing;
+}
+
