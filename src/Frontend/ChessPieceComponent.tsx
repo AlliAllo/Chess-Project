@@ -6,8 +6,8 @@ import { forEachChild } from 'typescript';
 
 
 export const pieceStyle: CSSProperties= {
-  width: "96px",
-  height: "96px",
+  width: "88px",
+  height: "88px",
 };
 //   
 
@@ -18,9 +18,7 @@ interface pieceProps {
 
 export default function ChessPiece(props: pieceProps) {
   const grab = (chessPiece: Piece | null, e: React.MouseEvent) => {
-    console.log("grabbing " )
-    
-    props.onStartDragging(chessPiece, e);
+      if (e.button === 0) props.onStartDragging(chessPiece, e);
     }
 
   

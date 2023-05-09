@@ -1,0 +1,23 @@
+.chessboard-container {
+    display: flex;
+  }
+  
+.algebraic-notation-box {
+    position: relative;
+    width: 400px;
+    height: 800px;
+    color: hsl(60deg 45.16% 87.84%);
+    background-color: rgb(39 37 34);
+    border: 1px solid #ddd;
+    margin-left: 30px;
+}
+
+.copyButton {
+    position: absolute;
+    left: 50%;
+    top: 95%;
+    transform: translateX(-50%);
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+}

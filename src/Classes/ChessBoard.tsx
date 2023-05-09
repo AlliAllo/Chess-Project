@@ -23,9 +23,9 @@ export interface Piece{
     y: number // position
     imageURL: string | null
     value?: number
-    white: boolean | undefined
+    white: boolean
     hasMoved?: boolean
-    symbol: string | undefined // K, P, Kn  # = check, x = capture , White win = 1-0, Black win = 0-1, Draw = 1/2-1/2
+    symbol: string | undefined // K, P, N  etc.
     legalMoves: Move[]
 
 
@@ -48,7 +48,7 @@ export class ChessBoard {
   
     constructor(fen: string){
 
-        //initialize the board with null values
+        //initialize the board
         this.createBoard(fen) 
         
     }
