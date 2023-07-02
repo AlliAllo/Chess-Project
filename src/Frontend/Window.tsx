@@ -13,14 +13,16 @@ export default function Window(bee: Props) {
   }
   const windowSize = useRef([window.innerWidth, window.innerHeight]);
 
+  const resetButtonStyle: CSSProperties = {
+    left: 400 + 200,
+  }
   const appStyle: CSSProperties = { 
-    width: windowSize.current[0],
-    height: windowSize.current[1],
+    width: windowSize.current[0]+200,
+    height: windowSize.current[1]+600,
     
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'center',
-    overflow: 'hidden'
   }
 
   const [notation, setNotation] = useState<string | undefined>(undefined);
@@ -28,12 +30,11 @@ export default function Window(bee: Props) {
   const getAlgebraicNotation = useCallback((PGN: string) => {
     setNotation(PGN);
   }, [notation]);
-     
-
 
   return (
       <div className="window" style={appStyle} onMouseDown={e => boo(e)}>
-      
+
+      <button style={resetButtonStyle} className='resetGameButton' onClick={() => {console.log("reset game!")}}>Reset game</button>
       <ChessBoardComponent getAlgebraicNotation={getAlgebraicNotation}>
         </ChessBoardComponent>
         <AlgebraicNotationBox notation={notation}></AlgebraicNotationBox>
