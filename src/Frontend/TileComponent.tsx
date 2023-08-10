@@ -12,6 +12,7 @@ interface TileProps {
   children?: ReactNode
   x: number
   y: number
+  color?: string
 
   onStartDragging: (thisPiece: Piece | null, e: React.MouseEvent) => void
   onDrop: (x: number, y: number) => void
@@ -38,8 +39,8 @@ export default function Tile(props: TileProps) {
   } : {};
   
 
-
-  const tileColor = props.tileIsWhite ? 'hsl(90deg 27.12% 46.27%)' : 'hsl(60deg 45.16% 87.84%)';
+  const tileColor = props.color ? props.color : props.tileIsWhite ? 'hsl(90deg 27.12% 46.27%)' : 'hsl(60deg 45.16% 87.84%)'
+  
   const tileStyle: CSSProperties = {
     width: '100px',
     height: '100px',
@@ -59,8 +60,12 @@ export default function Tile(props: TileProps) {
     tileColor === 'hsl(90deg 27.12% 46.27%)' ? setColor("#d46b51") : setColor("#eb7c6a") 
   }
 
+  /**
+   * Function for highlighting squares. It is incomplete.
+   * @returns 
+   */
+  /*
   function selectedTile() {
-
     if (highlightColor === "#bbca2b" || highlightColor === "rgb(246 246 104") {
       setColor(tileColor)
       return;
@@ -69,6 +74,7 @@ export default function Tile(props: TileProps) {
     tileColor === 'hsl(90deg 27.12% 46.27%)' ? setColor("#bbca2b") : setColor("rgb(246 246 104") 
 
   }
+  */
 
   
   const xNotation = ["a", "b", "c", "d", "e", "f", "g", "h"]
@@ -78,13 +84,14 @@ export default function Tile(props: TileProps) {
     userSelect: "none",
     fontSize: "18px",
     color: props.tileIsWhite ? 'hsl(60deg 45.16% 87.84%)' : 'hsl(90deg 27.12% 46.27%)',
+    
   }
 
   
   return (
     <div draggable={false} className="tile" style={tileStyle} 
     onMouseUp={e => drop(props.grabbedPiece, e)} 
-    onMouseDown={selectedTile}
+    //onMouseDown={selectedTile}
     onContextMenu={e => highlightTile(e)}>
         {props.piece  && <ChessPiece piece={props.piece}  onStartDragging={props.onStartDragging} />}
         {props.legalTile && <div className="legalTile centered" style={legalTileStyle}></div>}

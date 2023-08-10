@@ -10,11 +10,7 @@
   font-size: 21px;
   padding: 10px;
   border-radius: 5px;
-  top : 25%;
-
-  transform: translateX(-50%); 
   cursor: pointer;
-  
 
 }
 .window {

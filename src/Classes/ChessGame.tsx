@@ -15,11 +15,11 @@ export class ChessGame{
     private chessBoard: (Piece | null)[][];
     private moves: Move | null
     private pieces: Piece[]
-    private turn: number = 1
+    private turn: number = 0
     private check: boolean = false
     private checkMate: boolean = false
     private staleMate: boolean = false
-    private fiftyMoveRule: boolean = false
+    private moveCount: number = 0 // This is used for the 50 move rule. - When piece is captured counter is reset.
     private threeFoldRepetition: boolean = false
     private castling: boolean = false
     private queencastling: boolean = false
@@ -28,8 +28,10 @@ export class ChessGame{
     private winner: boolean | null = null // True means white, false means black.
     private draw: boolean = false
     private fen: string 
-    private PGN: string 
-    private kingPosition: Move = [4, 7]
+    private PGN: string
+    private opponentMarkedSquares: Set<Move>  // This will represent the squares that are marked by the opponent player.
+    private whiteKingPosition: Move // Position of the white king.
+    private blackKingPosition: Move 
 
     private depth: number
    
@@ -48,7 +50,9 @@ export class ChessGame{
         this.chessBoardClass = new ChessBoard(this.fen)
         this.chessBoard = this.chessBoardClass.getBoard();
         this.pieces = this.chessBoardClass.getPieces();
-        
+        this.opponentMarkedSquares = new Set<Move>()
+        this.whiteKingPosition = [4, 0] // Starting position for the white king. This will be updated if the king makes a move.
+        this.blackKingPosition = [4, 7]
     }
 
     getBoard(): (Piece | null)[][] {
@@ -59,6 +63,10 @@ export class ChessGame{
     makeMove(board: Board, piece: Piece | null, move: Move): Board {
       if (piece) board[move[0]][move[1]] = piece
       else board[move[0]][move[1]] = null
+
+      if (piece?.symbol === "K"){
+
+      }
 
       return board
 
@@ -76,49 +84,25 @@ export class ChessGame{
         return this.fen;
     }
 
+    getopponentMarkedSquares(){
+      return this.opponentMarkedSquares
+    }
+
     getTurn() {
         return this.turn;
     }
 
     /**
-     * @returns True if it is white's turn, false if it is black's turn.
+     * @returns True if it is black's turn, false if it is white's turn.
      */
     whoseTurn(): boolean {
-      return this.turn % 2 === 1;
+      return this.turn % 2 === 0;
     }
-    
-   
-    updateKingPosition(move: Move): void {
-      // Here we update the king position. Here "Move" is a position on the board.
-      console.log("updateKingPosition")
-      this.kingPosition = move;
-    }
-
-    otherLegalMoves(board: Board, color: boolean | null): boolean {
-      // Helper function for calcLegalMoves. Here we check if king is capturable in a given board.
-      const opponentPieces: Piece[] = this.pieces.filter(piece => piece.white === this.whoseTurn());
-      for (let i = 0; i < board.length; i++) {
-        for (let j = 0; j < board.length; j++) {
-          const piece = board[i][j];
-          if (piece && piece.white !== this.whoseTurn()) {
-            
-            console.log("piece " + piece.symbol + piece.white + " " + piece.legalMoves)
-            if (piece.legalMoves.some(move => move[0] === this.kingPosition[0] && move[1] === this.kingPosition[1])) {
-              console.log("updateKingPosition")
-              return false;
-            }
-          }
-      }
-    }
-    return true;
-
-    }
-   
 
   
+    calcLegalMoves(board: Board): void{
+      this.opponentMarkedSquares.clear()
 
-  
-    calcLegalMoves(board: Board, color: boolean | null): void{
       // Here we calculate all the legal moves for each piece in the chessboard.
       for (let y = 7; y >= 0; y--) {
         for (let x = 0; x < this.chessWidth; x++) {
@@ -127,6 +111,8 @@ export class ChessGame{
             const piece: Piece = board[x][y] as Piece;
             // We need to empty the legalMoves array before we calculate the legal moves for the piece.
             piece.legalMoves = [];
+           
+
 
             const symbol = piece.symbol;
             
@@ -244,6 +230,7 @@ export class ChessGame{
                 piece.legalMoves.push([x+1, y-1])
                 piece.legalMoves.push([x-1, y-1])
 
+                // Castling
                 if (!(piece.hasMoved === true)){
                   const row = piece.white ? 0 : 7;
                   const leftRook = board[0][row];
@@ -284,8 +271,6 @@ export class ChessGame{
                 piece.legalMoves.push([x-1, y+direction])
               }
 
-
-        
             } // End of Pawn
 
             // Filter out move that are out of bounds. 
@@ -313,23 +298,31 @@ export class ChessGame{
               }
             })
 
-            /*
-            // Convert from psuedo-legal to actually legal.
-            if (color === null){
-            piece.legalMoves = piece.legalMoves.filter(move => {
-              const copiedBoard: Board = JSON.parse(JSON.stringify(board));
-
-              const futureBoard: Board = this.makeMove([...copiedBoard], piece, move)
-              this.calcLegalMoves(futureBoard, !piece.white)
-              return this.otherLegalMoves(futureBoard, !piece.white)
-            })
+            // Mark squares the opponent has access to.
+            if (piece.white != this.whoseTurn()){
+              for (let z = 0; z < piece.legalMoves.length; z++){
+                const move = piece.legalMoves[z]
+                this.opponentMarkedSquares.add(move)
+              }
             }
-            */
-
-
+            // Check if the users king is in the set of marked squares.
+            console.log(this.whoseTurn()) // This is inverted. True = white's turn.
+            const kingPosition = this.whoseTurn() ? this.blackKingPosition : this.whiteKingPosition
+            if (this.opponentMarkedSquares.has(kingPosition)){
+              console.log("OH NO!")
+            }
+            
+          
+            
         }
       }
     }
+
+
+    // Print the marked squares.
+    this.opponentMarkedSquares.forEach(function(value){
+      //console.log(value)
+    })
   }
   
   newTurn(move: Move, pieceMoved: Piece, capture: boolean, check: boolean, castle: boolean | null){
@@ -346,12 +339,12 @@ export class ChessGame{
   }
   addNotation(move: Move, pieceMoved: Piece, capture: boolean, check: boolean, castle: boolean | null){
     // Move needs more information. We need to know exatcly which piece is moving. Not just the type of piece.
-    const actualTurn = this.turn === 1 ? 1 : Math.ceil(this.turn/2)
+    const actualTurn = Math.ceil(this.turn/2)
 
     // This converts a move type to a notation.
     const row = String.fromCharCode(97 + (move[0]))
 
-    if (this.turn % 2 === 0){ // White's turn
+    if (!this.whoseTurn()){ // White's turn
       this.PGN += actualTurn + ". "
     }
     else{ // Black's turn

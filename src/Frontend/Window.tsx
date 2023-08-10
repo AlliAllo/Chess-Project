@@ -11,14 +11,20 @@ interface Props {
 export default function Window(bee: Props) {
   function boo(e: React.MouseEvent) {
   }
-  const windowSize = useRef([window.innerWidth, window.innerHeight]);
+  function resetGame() {
+    window.location.reload();
+  }
+
+  const [windowWidth, windowHeight] = [window.innerWidth, window.innerHeight];
+  const windowSize = useRef([windowWidth, windowHeight]);
 
   const resetButtonStyle: CSSProperties = {
-    left: 400 + 200,
+    top: windowHeight/100,
+    left: windowWidth/2-100,
   }
   const appStyle: CSSProperties = { 
-    width: windowSize.current[0]+200,
-    height: windowSize.current[1]+600,
+    width: windowSize.current[0],
+    height: windowSize.current[1],
     
     display: 'flex', 
     alignItems: 'center', 
@@ -34,7 +40,7 @@ export default function Window(bee: Props) {
   return (
       <div className="window" style={appStyle} onMouseDown={e => boo(e)}>
 
-      <button style={resetButtonStyle} className='resetGameButton' onClick={() => {console.log("reset game!")}}>Reset game</button>
+      <button style={resetButtonStyle} className='resetGameButton' onClick={resetGame}>Reset game</button>
       <ChessBoardComponent getAlgebraicNotation={getAlgebraicNotation}>
         </ChessBoardComponent>
         <AlgebraicNotationBox notation={notation}></AlgebraicNotationBox>

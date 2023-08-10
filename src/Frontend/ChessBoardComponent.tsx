@@ -16,7 +16,7 @@ interface Props {
 
 
 const game = new ChessGame();
-game.calcLegalMoves(game.getBoard(), null)
+game.calcLegalMoves(game.getBoard())
 const board = game.getBoard();
 
 
@@ -61,7 +61,6 @@ export default function ChessBoardComponent(props: Props) {
         const castling = newPiece.symbol === "K" && Math.abs(distance) >= 2;
         if (castling) {
           // If we are castling, we need to move the rook as well.
-          
           const row = newPiece.white ? 0 : 7; 
           const kingColumn = x >= 6 ? 7 : 2; // if x is 6 or 7, we are castling to the right, otherwise to the left.
 
@@ -89,9 +88,8 @@ export default function ChessBoardComponent(props: Props) {
 
         }
 
-        if (newPiece.symbol === "K") chessGame.updateKingPosition([newPiece.x, newPiece.y])
         
-        chessGame.calcLegalMoves(chessGame.getBoard(), null);
+        chessGame.calcLegalMoves(chessGame.getBoard());
         // Call the usecallback hook to update the notation of the game.
         props.getAlgebraicNotation(chessGame.getPGN())
         setChessGame(chessGame);
@@ -110,7 +108,7 @@ export default function ChessBoardComponent(props: Props) {
   const move = (e: React.MouseEvent) => {
     const extra = grabbedPiece ? 0 : 50
     if (ghostPiece.current){
-      console.log("MOVING");
+      //console.log("MOVING");
       ghostPiece.current.style.position = "fixed";
       ghostPiece.current.style.top = `${e.clientY - extra - ghostPiece.current.clientHeight / 2}px`; 
       ghostPiece.current.style.left = `${e.clientX -extra - ghostPiece.current.clientWidth / 2}px`;
@@ -118,6 +116,11 @@ export default function ChessBoardComponent(props: Props) {
   };
   
     let piecesToDisplayJSX: JSX.Element[] = []
+    
+    function test(move: Move): string {
+      return move.toString(); 
+    }
+
     for (let y = 7; y >= 0; y--) {
         for (let x = 0; x < chessGame.getBoard()[y].length; x++) {
           
@@ -130,6 +133,24 @@ export default function ChessBoardComponent(props: Props) {
             piece = null 
           }
 
+          let marked = undefined
+          const xy: Move = [x, y]
+          const op = chessGame.getopponentMarkedSquares()
+
+          op.forEach(move => {
+            if (move[0] === xy[0] && move[1] === xy[1]) {
+              console.log("JOFIDJSOIFJOSDFJOSIFJOSI");
+              marked = "#5203fc";
+            }
+          });
+          
+          if (op.has(xy)) {
+            console.log("JOFIDJSOIFJOSDFJOSIFJOSI")
+            marked = "030bfc"
+          }
+
+          
+          
 
           piecesToDisplayJSX.push(
                 <Tile
@@ -139,6 +160,7 @@ export default function ChessBoardComponent(props: Props) {
                 onStartDragging={onStartDragging}
                 onDrop={onDrop}
                 x={x} y={y} 
+                color={marked}
                 tileIsWhite={isWhite} ></Tile>
           )
         
