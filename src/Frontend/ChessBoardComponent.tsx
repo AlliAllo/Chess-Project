@@ -139,15 +139,11 @@ export default function ChessBoardComponent(props: Props) {
 
           op.forEach(move => {
             if (move[0] === xy[0] && move[1] === xy[1]) {
-              console.log("JOFIDJSOIFJOSDFJOSIFJOSI");
               marked = "#5203fc";
             }
           });
           
-          if (op.has(xy)) {
-            console.log("JOFIDJSOIFJOSDFJOSIFJOSI")
-            marked = "030bfc"
-          }
+      
 
           
           

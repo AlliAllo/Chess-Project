@@ -28,6 +28,8 @@ export interface Piece{
     symbol: string | undefined // K, P, N  etc.
     legalMoves: Move[]
 
+    pinAngle?: [number, number]
+
 
   }
   

@@ -1,3 +1,4 @@
+import { abort } from "process";
 import { ChessBoard } from "./ChessBoard"
 import { Piece } from "./ChessBoard";
 import { Move } from "./Move";
@@ -32,8 +33,9 @@ export class ChessGame{
     private opponentMarkedSquares: Set<Move>  // This will represent the squares that are marked by the opponent player.
     private whiteKingPosition: Move // Position of the white king.
     private blackKingPosition: Move 
-
+    private absolutePinnedPieces: Piece[] = [] // This will be a list of pieces that are pinned.
     private depth: number
+    private doubleCheck: boolean = false
    
 
 
@@ -65,7 +67,8 @@ export class ChessGame{
       else board[move[0]][move[1]] = null
 
       if (piece?.symbol === "K"){
-
+        if (piece.white) this.whiteKingPosition = move
+        else this.blackKingPosition = move
       }
 
       return board
@@ -89,7 +92,7 @@ export class ChessGame{
     }
 
     getTurn() {
-        return this.turn;
+      return this.turn;
     }
 
     /**
@@ -99,9 +102,153 @@ export class ChessGame{
       return this.turn % 2 === 0;
     }
 
+    /**
+     * Gets the pinned pieces from a board.
+     * @param board 
+     * @param kingPosition 
+     */
+    calcAbsolutePinnedPieces(board: Board, kingPosition: Move) {
+      // Absolute pin - Create a list of pinned pieces, who's movement will then be limited.
+      // A piece is pinned if it is the same color as the king and the piece is between the king and the opponent piece. Only 1 piece can be between the king and the opponent piece. 
+      const king = board[kingPosition[0]][kingPosition[1]]! as Piece
+      let possiblePinnedPiece: Piece | null = null
+      for (let j = 1; j <= 7-king.x; j++) {
+          const nextTile = board[king.x+j][king.y]
+          if (nextTile !== null && nextTile !== undefined){
+            if (nextTile.white === king.white && !possiblePinnedPiece){
+              possiblePinnedPiece = nextTile! as Piece
+            }
+            else{
+              if (possiblePinnedPiece && nextTile.white !== king.white && (nextTile.symbol === "R" || nextTile.symbol === "Q")){
+                possiblePinnedPiece.pinAngle = [1, 0]
+                this.absolutePinnedPieces.push(possiblePinnedPiece) 
+                break;
+              }
+            }
+          }
+      }
+      possiblePinnedPiece = null
+
+      for (let j = 1; j <= 7-king.x; j++) {
+        const nextTile = board[king.x][king.y+j]
+        if (nextTile !== null && nextTile !== undefined){
+          if (nextTile.white === king.white && !possiblePinnedPiece){
+            possiblePinnedPiece = nextTile! as Piece
+          }
+          else{
+            if (possiblePinnedPiece && nextTile.white !== king.white && (nextTile.symbol === "R" || nextTile.symbol === "Q")){
+              possiblePinnedPiece.pinAngle = [0, 1]
+              this.absolutePinnedPieces.push(possiblePinnedPiece) 
+              break;
+            }
+          }
+        }
+      }
+      possiblePinnedPiece = null
+      for (let j = 1; j <= king.x; j++) {
+        const nextTile = board[king.x-j][king.y]
+        if (nextTile !== null && nextTile !== undefined){
+          if (nextTile.white === king.white && !possiblePinnedPiece){
+            possiblePinnedPiece = nextTile! as Piece
+          }
+          else{
+            if (possiblePinnedPiece && nextTile.white !== king.white && (nextTile.symbol === "R" || nextTile.symbol === "Q")){
+              possiblePinnedPiece.pinAngle = [-1, 0]
+              this.absolutePinnedPieces.push(possiblePinnedPiece) 
+              break;
+            }
+          }
+        }
+      }
+      possiblePinnedPiece = null
+      for (let j = 1; j <= king.y; j++) {
+        const nextTile = board[king.x][king.y-j]
+        if (nextTile !== null && nextTile !== undefined){
+          if (nextTile?.white === king.white && !possiblePinnedPiece){
+            possiblePinnedPiece = nextTile! as Piece
+          }
+          else{
+            if (possiblePinnedPiece && nextTile?.white !== king.white && (nextTile?.symbol === "R" || nextTile?.symbol === "Q")){
+              possiblePinnedPiece.pinAngle = [0, -1]
+              this.absolutePinnedPieces.push(possiblePinnedPiece)
+              break;
+            }
+          }
+        }
+      }
+      possiblePinnedPiece = null
+      for (let j = 1; j <= 7-king.x; j++) {
+        const nextTile = board[king.x+j][king.y+j]
+        if (nextTile !== null && nextTile !== undefined){
+          if (nextTile.white === king.white && !possiblePinnedPiece){
+            possiblePinnedPiece = nextTile! as Piece
+          }
+          else{
+            if (possiblePinnedPiece && nextTile.white !== king.white && (nextTile.symbol === "B" || nextTile.symbol === "Q")){
+              possiblePinnedPiece.pinAngle = [1, 1]
+              this.absolutePinnedPieces.push(possiblePinnedPiece)
+              break;
+            }
+          }
+        }
+      }
+      possiblePinnedPiece = null
+      for (let j = 1; j <= king.x; j++) {
+        const nextTile = board[king.x-j][king.y+j]
+        if (nextTile !== null && nextTile !== undefined){
+          if (nextTile?.white === king.white && !possiblePinnedPiece){
+            possiblePinnedPiece = nextTile! as Piece
+          }
+          else{
+            if (possiblePinnedPiece && nextTile.white !== king.white && (nextTile.symbol === "B" || nextTile.symbol === "Q")){
+              possiblePinnedPiece.pinAngle = [-1, 1]
+              this.absolutePinnedPieces.push(possiblePinnedPiece)
+              break;
+            }
+          }
+        }
+      }
+      possiblePinnedPiece = null
+      for (let j = 1; j <= 7-king.x; j++) {
+        const nextTile = board[king.x+j][king.y-j]
+        if (nextTile){
+          if (nextTile.white === king.white && !possiblePinnedPiece){
+            possiblePinnedPiece = nextTile! as Piece
+          }
+          else{
+            if (possiblePinnedPiece && nextTile.white !== king.white && (nextTile.symbol === "B" || nextTile.symbol === "Q")){
+              possiblePinnedPiece.pinAngle = [1, -1]
+              this.absolutePinnedPieces.push(possiblePinnedPiece)
+              break;
+            }
+          }
+        }
+      }
+      possiblePinnedPiece = null
+      for (let j = 1; j <= king.x; j++) {
+        const nextTile = board[king.x-j][king.y-j]
+        if (nextTile !== null && nextTile !== undefined){
+          if (nextTile.white === king.white && !possiblePinnedPiece){
+            possiblePinnedPiece = nextTile! as Piece
+          }
+          else{
+            if (possiblePinnedPiece && nextTile.white !== king.white && (nextTile.symbol === "B" || nextTile.symbol === "Q")){
+              possiblePinnedPiece.pinAngle = [-1, -1]
+              this.absolutePinnedPieces.push(possiblePinnedPiece)
+              break;
+            }
+          }
+        }
+      }
+    }
   
     calcLegalMoves(board: Board): void{
       this.opponentMarkedSquares.clear()
+      this.absolutePinnedPieces = []
+
+      const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
+      const oppositeKingPosition = this.whoseTurn() ? this.blackKingPosition : this.whiteKingPosition
+      this.calcAbsolutePinnedPieces(board, kingPosition)
 
       // Here we calculate all the legal moves for each piece in the chessboard.
       for (let y = 7; y >= 0; y--) {
@@ -111,8 +258,6 @@ export class ChessGame{
             const piece: Piece = board[x][y] as Piece;
             // We need to empty the legalMoves array before we calculate the legal moves for the piece.
             piece.legalMoves = [];
-           
-
 
             const symbol = piece.symbol;
             
@@ -218,7 +363,6 @@ export class ChessGame{
                   break;
                 }
               }
-
             } // End of Queen  
             if (piece.symbol === "K") { // King
                 piece.legalMoves.push([x+1, y])
@@ -298,6 +442,15 @@ export class ChessGame{
               }
             })
 
+            
+            // Check if the users king is in the set of marked squares.
+            this.opponentMarkedSquares.forEach(move => {
+              if (move[0] === kingPosition[0] && move[1] === kingPosition[1]) {
+                this.check = true
+              }
+            });
+
+
             // Mark squares the opponent has access to.
             if (piece.white != this.whoseTurn()){
               for (let z = 0; z < piece.legalMoves.length; z++){
@@ -305,13 +458,105 @@ export class ChessGame{
                 this.opponentMarkedSquares.add(move)
               }
             }
-            // Check if the users king is in the set of marked squares.
-            console.log(this.whoseTurn()) // This is inverted. True = white's turn.
-            const kingPosition = this.whoseTurn() ? this.blackKingPosition : this.whiteKingPosition
-            if (this.opponentMarkedSquares.has(kingPosition)){
-              console.log("OH NO!")
-            }
+
             
+            const king = board[kingPosition[0]][kingPosition[1]]! as Piece
+            king.legalMoves = king.legalMoves.filter(move => {
+              this.opponentMarkedSquares.forEach(markedSquare => {
+                console.log(markedSquare)
+                if (move[0] === markedSquare[0] && move[1] === markedSquare[1]) return false
+                return true
+              })
+            })
+            
+
+            // Based on the marked squares from the opponent, king can either move in a unmarked square or have other piece block the check. 
+            if (this.check) {
+              console.log("Check")
+              // Here we force cast the piece to be a Piece and not null. As we know that the piece is a king.
+              
+              // Remove all moves that do not block the check, or that don't eliminate the piece that is checking the king.
+              
+              // Figure out which piece is checking the king. (There can be 2).
+              let attackers: [Piece | null, Piece | null] = [null, null]
+          
+              if (piece.legalMoves.includes(kingPosition)){
+                if (attackers[0] === null) attackers[0] = piece
+                else {
+                  attackers[1] = piece
+                  this.doubleCheck = true
+              }
+              }
+              // If there is 2 attackers, then we can't block the check.
+
+              piece.legalMoves = piece.legalMoves.filter(move => {
+                if (attackers[0]?.legalMoves.includes(move)) return true               
+                return false
+              })
+              
+              
+            }
+            // If a side has no legal moves, then it is checkmate.
+
+
+
+            
+            // Based on the pinned pieces, we can limit the movement of the pinned pieces.
+            // Start by getting the angle of the pin.
+            // This code is very ugly. I will try to clean it up later.
+            if (this.absolutePinnedPieces.length > 0){
+              this.absolutePinnedPieces.forEach(pinnedPiece => {
+                pinnedPiece.legalMoves = pinnedPiece.legalMoves.filter(move => {
+                  const angle = pinnedPiece.pinAngle! as [number, number] // example [1, 0] = horizontal pin
+
+                  if (angle[0] === 1 && angle[1] === 0 ){
+                    for (let i = pinnedPiece.x+1; i < 7; i++){
+                      if (move[0] === i && move[1] === pinnedPiece.y) return true
+                    }
+                  }
+                  if (angle[0] === -1 && angle[1] === 0 ){
+                    for (let i = pinnedPiece.x-1; i > 0; i--){
+                      if (move[0] === i && move[1] === pinnedPiece.y) return true
+                    }
+                  }
+                  if (angle[0] === 0 && angle[1] === 1 ){
+                    for (let i = pinnedPiece.y+1; i < 7; i++){
+                      if (move[0] === pinnedPiece.x && move[1] === i) return true
+                    }
+                  }
+                  if (angle[0] === 0 && angle[1] === -1 ){
+                    for (let i = pinnedPiece.y-1; i > 0; i--){
+                      if (move[0] === pinnedPiece.x && move[1] === i) return true
+                    }
+                  }
+                  if (angle[0] === 1 && angle[1] === 1 ){
+                    for (let i = 1; i < 7; i++){
+                      if (move[0] === pinnedPiece.x+i && move[1] === pinnedPiece.y+i) return true
+                    }
+                  }
+                  if (angle[0] === -1 && angle[1] === 1 ){
+                    for (let i = 1; i < 7; i++){
+                      if (move[0] === pinnedPiece.x - i && move[1] === pinnedPiece.y+i) return true
+                    }
+                  }
+                  if (angle[0] === 1 && angle[1] === -1 ){
+                    for (let i = 1; i < 7; i++){
+                      if (move[0] === pinnedPiece.x+i && move[1] === pinnedPiece.y-i) return true
+                    }
+                  }
+                  if (angle[0] === -1 && angle[1] === -1 ){
+                    for (let i = 1; i < 7; i++){
+                      if (move[0] === pinnedPiece.x-i && move[1] === pinnedPiece.y-i) return true
+                    }
+                  }
+                  return false
+                })
+              })
+            }
+
+
+
+
           
             
         }
