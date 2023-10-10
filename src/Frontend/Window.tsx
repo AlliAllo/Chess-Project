@@ -42,7 +42,8 @@ export default function Window(bee: Props) {
 
       <button style={resetButtonStyle} className='resetGameButton' onClick={resetGame}>Reset game</button>
       <ChessBoardComponent getAlgebraicNotation={getAlgebraicNotation}>
-        </ChessBoardComponent>
+
+      </ChessBoardComponent>
         <AlgebraicNotationBox notation={notation}></AlgebraicNotationBox>
           
       </div>

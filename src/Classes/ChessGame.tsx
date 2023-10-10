@@ -7,12 +7,11 @@ import { Move } from "./Move";
 Here we create the ChessGame. 
 */
 
-type Board = (Piece | null)[][];
+type chessboard = (Piece | null)[][];
 
 export class ChessGame{
     private chessWidth: number
     private chessHeight: number
-    private chessBoardClass: ChessBoard
     private chessBoard: (Piece | null)[][];
     private moves: Move | null
     private pieces: Piece[]
@@ -45,34 +44,42 @@ export class ChessGame{
         this.moves = null
         
         this.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
-        this.depth = 3 // Look 3 moves ahead and evaluate the board.
+        this.depth = 3 // Look 3 moves ahead and evaluate the this.chessboard.
         this.PGN = ""
 
         // Starting position
-        this.chessBoardClass = new ChessBoard(this.fen)
-        this.chessBoard = this.chessBoardClass.getBoard();
-        this.pieces = this.chessBoardClass.getPieces();
+        this.chessBoard = new ChessBoard(this.fen).getBoard();
+        this.pieces = new ChessBoard(this.fen).getPieces();
         this.opponentMarkedSquares = new Set<Move>()
         this.whiteKingPosition = [4, 0] // Starting position for the white king. This will be updated if the king makes a move.
         this.blackKingPosition = [4, 7]
     }
 
+
     getBoard(): (Piece | null)[][] {
         return this.chessBoard;
     }
 
-    // Changes the board in the position given in the parameter.
-    makeMove(board: Board, piece: Piece | null, move: Move): Board {
-      if (piece) board[move[0]][move[1]] = piece
-      else board[move[0]][move[1]] = null
+    makeMove(piece: Piece, move: Move): boolean {
+      if (piece.white !== this.whoseTurn()) return false;
+      if (!(piece.legalMoves.some(a => a[0] === move[0] && a[1] === move[1]))) return false;
+      if (piece.x === move[0] && piece.y === move[1]) return false;
 
-      if (piece?.symbol === "K"){
-        if (piece.white) this.whiteKingPosition = move
-        else this.blackKingPosition = move
-      }
+      const capture: boolean = this.chessBoard[move[0]][move[1]] !== null
+      const check: boolean = this.check
+      this.chessBoard[move[0]][move[1]] = piece
+      this.chessBoard[piece.x][piece.y] = null
+      piece.x = move[0]
+      piece.y = move[1]
+      
+      this.calcLegalMoves();
 
-      return board
+      this.turn++
+      piece.hasMoved = true;
+     
+      this.addNotation(move, piece, capture, check, null)
 
+      return true;
     }
 
     getPieces(): Piece[] {
@@ -103,17 +110,17 @@ export class ChessGame{
     }
 
     /**
-     * Gets the pinned pieces from a board.
-     * @param board 
+     * Gets the pinned pieces from a this.chessboard.
+     * @param this.chessboard 
      * @param kingPosition 
      */
-    calcAbsolutePinnedPieces(board: Board, kingPosition: Move) {
+    calcAbsolutePinnedPieces(kingPosition: Move) {
       // Absolute pin - Create a list of pinned pieces, who's movement will then be limited.
       // A piece is pinned if it is the same color as the king and the piece is between the king and the opponent piece. Only 1 piece can be between the king and the opponent piece. 
-      const king = board[kingPosition[0]][kingPosition[1]]! as Piece
+      const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
       let possiblePinnedPiece: Piece | null = null
       for (let j = 1; j <= 7-king.x; j++) {
-          const nextTile = board[king.x+j][king.y]
+          const nextTile = this.chessBoard[king.x+j][king.y]
           if (nextTile !== null && nextTile !== undefined){
             if (nextTile.white === king.white && !possiblePinnedPiece){
               possiblePinnedPiece = nextTile! as Piece
@@ -130,7 +137,7 @@ export class ChessGame{
       possiblePinnedPiece = null
 
       for (let j = 1; j <= 7-king.x; j++) {
-        const nextTile = board[king.x][king.y+j]
+        const nextTile = this.chessBoard[king.x][king.y+j]
         if (nextTile !== null && nextTile !== undefined){
           if (nextTile.white === king.white && !possiblePinnedPiece){
             possiblePinnedPiece = nextTile! as Piece
@@ -146,7 +153,7 @@ export class ChessGame{
       }
       possiblePinnedPiece = null
       for (let j = 1; j <= king.x; j++) {
-        const nextTile = board[king.x-j][king.y]
+        const nextTile = this.chessBoard[king.x-j][king.y]
         if (nextTile !== null && nextTile !== undefined){
           if (nextTile.white === king.white && !possiblePinnedPiece){
             possiblePinnedPiece = nextTile! as Piece
@@ -162,7 +169,7 @@ export class ChessGame{
       }
       possiblePinnedPiece = null
       for (let j = 1; j <= king.y; j++) {
-        const nextTile = board[king.x][king.y-j]
+        const nextTile = this.chessBoard[king.x][king.y-j]
         if (nextTile !== null && nextTile !== undefined){
           if (nextTile?.white === king.white && !possiblePinnedPiece){
             possiblePinnedPiece = nextTile! as Piece
@@ -178,7 +185,7 @@ export class ChessGame{
       }
       possiblePinnedPiece = null
       for (let j = 1; j <= 7-king.x; j++) {
-        const nextTile = board[king.x+j][king.y+j]
+        const nextTile = this.chessBoard[king.x+j][king.y+j]
         if (nextTile !== null && nextTile !== undefined){
           if (nextTile.white === king.white && !possiblePinnedPiece){
             possiblePinnedPiece = nextTile! as Piece
@@ -194,7 +201,7 @@ export class ChessGame{
       }
       possiblePinnedPiece = null
       for (let j = 1; j <= king.x; j++) {
-        const nextTile = board[king.x-j][king.y+j]
+        const nextTile = this.chessBoard[king.x-j][king.y+j]
         if (nextTile !== null && nextTile !== undefined){
           if (nextTile?.white === king.white && !possiblePinnedPiece){
             possiblePinnedPiece = nextTile! as Piece
@@ -210,7 +217,7 @@ export class ChessGame{
       }
       possiblePinnedPiece = null
       for (let j = 1; j <= 7-king.x; j++) {
-        const nextTile = board[king.x+j][king.y-j]
+        const nextTile = this.chessBoard[king.x+j][king.y-j]
         if (nextTile){
           if (nextTile.white === king.white && !possiblePinnedPiece){
             possiblePinnedPiece = nextTile! as Piece
@@ -226,7 +233,7 @@ export class ChessGame{
       }
       possiblePinnedPiece = null
       for (let j = 1; j <= king.x; j++) {
-        const nextTile = board[king.x-j][king.y-j]
+        const nextTile = this.chessBoard[king.x-j][king.y-j]
         if (nextTile !== null && nextTile !== undefined){
           if (nextTile.white === king.white && !possiblePinnedPiece){
             possiblePinnedPiece = nextTile! as Piece
@@ -242,20 +249,23 @@ export class ChessGame{
       }
     }
   
-    calcLegalMoves(board: Board): void{
+    /**
+     * Calculates the legal moves for each piece in the chessboard. This effectts the legalMoves array in each piece.
+     */
+    calcLegalMoves(): void{
       this.opponentMarkedSquares.clear()
       this.absolutePinnedPieces = []
 
       const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
       const oppositeKingPosition = this.whoseTurn() ? this.blackKingPosition : this.whiteKingPosition
-      this.calcAbsolutePinnedPieces(board, kingPosition)
+      this.calcAbsolutePinnedPieces(kingPosition)
 
-      // Here we calculate all the legal moves for each piece in the chessboard.
+      // Here we calculate all the legal moves for each piece in the chessthis.chessboard.
       for (let y = 7; y >= 0; y--) {
         for (let x = 0; x < this.chessWidth; x++) {
-          if (board[x][y] && board[x][y]?.symbol){
+          if (this.chessBoard[x][y] && this.chessBoard[x][y]?.symbol){
             // Here we use casting to make sure that the piece is a Piece and not null.
-            const piece: Piece = board[x][y] as Piece;
+            const piece: Piece = this.chessBoard[x][y] as Piece;
             // We need to empty the legalMoves array before we calculate the legal moves for the piece.
             piece.legalMoves = [];
 
@@ -264,25 +274,25 @@ export class ChessGame{
             if (symbol === "R"){ // Rook
               for (let j = 1; j <= 7-x; j++) {
                 piece.legalMoves.push([x+j, y])
-                if (board[x+j][y] !== null){
+                if (this.chessBoard[x+j][y] !== null){
                   break;
                 }  
               }
               for (let j = 1; j <= x; j++) {
                 piece.legalMoves.push([x-j, y])
-                if (board[x-j][y] !== null){
+                if (this.chessBoard[x-j][y] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= 7-y; j++) {
                 piece.legalMoves.push([x, y+j])
-                if (board[x][y+j] !== null){
+                if (this.chessBoard[x][y+j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= y; j++) {
                 piece.legalMoves.push([x, y-j])
-                if (board[x][y-j] !== null){
+                if (this.chessBoard[x][y-j] !== null){
                   break;
                 }
               }
@@ -291,25 +301,25 @@ export class ChessGame{
             if (piece.symbol === "B"){ // Bishop
               for (let j = 1; j <= 7-x; j++) {
                 piece.legalMoves.push([x+j, y+j])
-                if (board[x+j][y+j] !== null){
+                if (this.chessBoard[x+j][y+j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= x; j++) {
                 piece.legalMoves.push([x-j, y+j])
-                if (board[x-j][y+j] !== null){
+                if (this.chessBoard[x-j][y+j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= 7-x; j++) {
                 piece.legalMoves.push([x+j, y-j])
-                if (board[x+j][y-j] !== null){
+                if (this.chessBoard[x+j][y-j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= x; j++) {
                 piece.legalMoves.push([x-j, y-j])
-                if (board[x-j][y-j] !== null){
+                if (this.chessBoard[x-j][y-j] !== null){
                   break;
                 }
               } 
@@ -317,49 +327,49 @@ export class ChessGame{
             if (piece.symbol === "Q") { // Queen
               for (let j = 1; j <= 7-x; j++) {
                 piece.legalMoves.push([x+j, y])
-                if (board[x+j][y] !== null){
+                if (this.chessBoard[x+j][y] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= x; j++) {
                 piece.legalMoves.push([x-j, y])
-                if (board[x-j][y] !== null){
+                if (this.chessBoard[x-j][y] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= 7-y; j++) {
                 piece.legalMoves.push([x, y+j])
-                if (board[x][y+j] !== null){
+                if (this.chessBoard[x][y+j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= y; j++) {
                 piece.legalMoves.push([x, y-j])
-                if (board[x][y-j] !== null){
+                if (this.chessBoard[x][y-j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= 7-x; j++) {
                 piece.legalMoves.push([x+j, y+j])
-                if (board[x+j][y+j] !== null){
+                if (this.chessBoard[x+j][y+j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= x; j++) {
                 piece.legalMoves.push([x-j, y+j])
-                if (board[x-j][y+j] !== null){
+                if (this.chessBoard[x-j][y+j] !== null){
                   break;
                 }
               }
               for (let j = 1; j <= 7-x; j++) {
                 piece.legalMoves.push([x+j, y-j])
-                if (board[x+j][y-j] !== null){
+                if (this.chessBoard[x+j][y-j] !== null){
                   break;
                 }
               }  
               for (let j = 1; j <= x; j++) {
                 piece.legalMoves.push([x-j, y-j])
-                if (board[x-j][y-j] !== null){
+                if (this.chessBoard[x-j][y-j] !== null){
                   break;
                 }
               }
@@ -377,13 +387,13 @@ export class ChessGame{
                 // Castling
                 if (!(piece.hasMoved === true)){
                   const row = piece.white ? 0 : 7;
-                  const leftRook = board[0][row];
+                  const leftRook = this.chessBoard[0][row];
 
-                  if (!(leftRook?.hasMoved) && board[1][row] === null && board[2][row] === null && board[3][row] === null){
+                  if (!(leftRook?.hasMoved) && this.chessBoard[1][row] === null && this.chessBoard[2][row] === null && this.chessBoard[3][row] === null){
                     piece.legalMoves.push([2, row])
                   }
-                  const rightRook = board[7][row];
-                  if (!(rightRook?.hasMoved) && board[5][row] === null && board[6][row] === null){
+                  const rightRook = this.chessBoard[7][row];
+                  if (!(rightRook?.hasMoved) && this.chessBoard[5][row] === null && this.chessBoard[6][row] === null){
                     piece.legalMoves.push([6, row])
                   }
                 }
@@ -402,16 +412,16 @@ export class ChessGame{
             if (piece.symbol === "P"){ // Pawn
               const direction = piece.white ? 1 : -1;
               const row = piece.white ? 1 : 6;
-              if (board[x][y+direction] === null){
+              if (this.chessBoard[x][y+direction] === null){
                 piece.legalMoves.push([x, y+direction])
-                if (y === row && board[x][y+direction*2] === null){
+                if (y === row && this.chessBoard[x][y+direction*2] === null){
                   piece.legalMoves.push([x, y+direction*2])
                 }
               }
-              if (x < 7 && board[x+1][y+direction] !== null){
+              if (x < 7 && this.chessBoard[x+1][y+direction] !== null){
                 piece.legalMoves.push([x+1, y+direction])
               }
-              if (x > 0 && board[x-1][y+direction] !== null){
+              if (x > 0 && this.chessBoard[x-1][y+direction] !== null){
                 piece.legalMoves.push([x-1, y+direction])
               }
 
@@ -429,11 +439,11 @@ export class ChessGame{
 
             // Filter out moves where you capture your own piece.
             piece.legalMoves = piece.legalMoves.filter(move => {
-              if (board[move[0]][move[1]] === null){
+              if (this.chessBoard[move[0]][move[1]] === null){
                 return true
               }
               else{
-                if (board[move[0]][move[1]]?.white !== piece.white){
+                if (this.chessBoard[move[0]][move[1]]?.white !== piece.white){
                   return true
                 }
                 else{
@@ -460,7 +470,7 @@ export class ChessGame{
             }
 
             
-            const king = board[kingPosition[0]][kingPosition[1]]! as Piece
+            const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
             king.legalMoves = king.legalMoves.filter(move => {
               this.opponentMarkedSquares.forEach(markedSquare => {
                 console.log(markedSquare)
@@ -552,12 +562,7 @@ export class ChessGame{
                   return false
                 })
               })
-            }
-
-
-
-
-          
+            } 
             
         }
       }
@@ -570,13 +575,6 @@ export class ChessGame{
     })
   }
   
-  newTurn(move: Move, pieceMoved: Piece, capture: boolean, check: boolean, castle: boolean | null){
-    this.turn++
-    pieceMoved.hasMoved = true;
-
-
-    this.addNotation(move, pieceMoved, capture, check, castle)
-  }
   getNotationFromMove(move: Move): string{
     let notation: string
     notation = String.fromCharCode(97 + (move[0]))+(8-move[1])
