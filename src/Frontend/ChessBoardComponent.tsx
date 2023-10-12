@@ -33,10 +33,10 @@ export default function ChessBoardComponent(props: Props) {
     move(e)
       }, [setGrabbedPiece]);
 
+
   // This is where we drop the piece. Very important function :)
   const onDrop = useCallback((x: number, y: number) => {
     if (!(grabbedPiece)) return;
-
     if (chessGame.makeMove(grabbedPiece, [x, y])) {
       // Call the usecallback hook to update the notation of the game.
       props.getAlgebraicNotation(chessGame.getPGN())

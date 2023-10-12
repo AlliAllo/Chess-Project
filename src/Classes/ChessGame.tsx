@@ -60,30 +60,31 @@ export class ChessGame{
         return this.chessBoard;
     }
 
+    updateKingPosition(piece: Piece): void {
+      if (piece.symbol !== "K") return;
+      if (piece.white) this.whiteKingPosition = [piece.x, piece.y]
+      else this.blackKingPosition = [piece.x, piece.y]
+    }
+
     makeMove(piece: Piece, move: Move): boolean {
       if (piece.white !== this.whoseTurn()) return false;
       if (!(piece.legalMoves.some(a => a[0] === move[0] && a[1] === move[1]))) return false;
       if (piece.x === move[0] && piece.y === move[1]) return false;
+      this.turn++;
 
-      const capture: boolean = this.chessBoard[move[0]][move[1]] !== null
-      const check: boolean = this.check
-      this.chessBoard[move[0]][move[1]] = piece
-      this.chessBoard[piece.x][piece.y] = null
-      piece.x = move[0]
-      piece.y = move[1]
+      const capture: boolean = this.chessBoard[move[0]][move[1]] !== null;
+
+      const newPiece: Piece = { ...piece, x: move[0], y: move[1], hasMoved: true };    
+      this.chessBoard[piece.x][piece.y] = null; 
+      this.chessBoard[move[0]][move[1]] = newPiece;
       
+      this.updateKingPosition(piece);
+
+      this.addNotation(move, piece, capture, this.check, null);
+
       this.calcLegalMoves();
 
-      this.turn++
-      piece.hasMoved = true;
-     
-      this.addNotation(move, piece, capture, check, null)
-
       return true;
-    }
-
-    getPieces(): Piece[] {
-        return this.pieces;
     }
 
     getPGN(): string {
@@ -106,8 +107,9 @@ export class ChessGame{
       const pieces: Piece[] = []
       for (let y = 7; y >= 0; y--) {
         for (let x = 0; x < this.chessWidth; x++) {
-          if (this.chessBoard[x][y] == null) break;
-          pieces.push(this.chessBoard[x][y] as Piece)
+          if (this.chessBoard[x][y] !== null) {
+            pieces.push(this.chessBoard[x][y] as Piece)
+          }
         }
       }
       return pieces
@@ -263,7 +265,7 @@ export class ChessGame{
     calcPseudoLegalMoves(){
       for (let y = 7; y >= 0; y--) {
         for (let x = 0; x < this.chessWidth; x++) {
-          if (this.chessBoard[x][y] == null) break;
+          if (this.chessBoard[x][y] === null) continue;
 
           // Here we use casting to make sure that the piece is a Piece and not null.
           const piece: Piece = this.chessBoard[x][y] as Piece;
@@ -443,6 +445,10 @@ export class ChessGame{
       })
     }
 
+    /**
+     * Filters the moves where the piece would capture its own pieces.
+     * @param piece 
+     */
     filterCaptureOwnPiecesMoves(piece: Piece): void {
       piece.legalMoves = piece.legalMoves.filter(move => {
         if (this.chessBoard[move[0]][move[1]]?.white !== piece.white){
@@ -464,12 +470,12 @@ export class ChessGame{
     }
 
     markOpponentSquares(piece: Piece): void {
-      if (piece.white != this.whoseTurn()){
-        for (let z = 0; z < piece.legalMoves.length; z++){
-          const move = piece.legalMoves[z]
-          this.opponentMarkedSquares.add(move)
-        }
+      if (piece.white === this.whoseTurn()) return;
+      for (let z = 0; z < piece.legalMoves.length; z++){
+        const move = piece.legalMoves[z]
+        this.opponentMarkedSquares.add(move)
       }
+      
     }
 
     filterKingMovesBasedOnOpponentMarkedSquares(king: Piece): void {
@@ -584,15 +590,16 @@ export class ChessGame{
       this.calcPseudoLegalMoves();
 
       this.checkIfPlayerIsInCheck();
+
       this.getListOfPiecesFromBoard().forEach(piece => {
         this.filterOutOfBoundsMoves(piece);
         this.filterCaptureOwnPiecesMoves(piece);
         this.markOpponentSquares(piece);
-        this.filterKingMovesIfInCheck(piece, kingPosition);
-        this.filterPinnedPiecesMoves(piece);
+        //this.filterKingMovesIfInCheck(piece, kingPosition);
+        //this.filterPinnedPiecesMoves(piece);
       });
                   
-      this.filterKingMovesBasedOnOpponentMarkedSquares(king)
+      //this.filterKingMovesBasedOnOpponentMarkedSquares(king)
 
     
     }
