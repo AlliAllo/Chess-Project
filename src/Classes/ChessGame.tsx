@@ -102,6 +102,17 @@ export class ChessGame{
       return this.turn;
     }
 
+    getListOfPiecesFromBoard(): Piece[] {
+      const pieces: Piece[] = []
+      for (let y = 7; y >= 0; y--) {
+        for (let x = 0; x < this.chessWidth; x++) {
+          if (this.chessBoard[x][y] == null) break;
+          pieces.push(this.chessBoard[x][y] as Piece)
+        }
+      }
+      return pieces
+    }
+
     /**
      * @returns True if it is black's turn, false if it is white's turn.
      */
@@ -248,6 +259,315 @@ export class ChessGame{
         }
       }
     }
+
+    calcPseudoLegalMoves(){
+      for (let y = 7; y >= 0; y--) {
+        for (let x = 0; x < this.chessWidth; x++) {
+          if (this.chessBoard[x][y] == null) break;
+
+          // Here we use casting to make sure that the piece is a Piece and not null.
+          const piece: Piece = this.chessBoard[x][y] as Piece;
+          // We need to empty the legalMoves array before we calculate the legal moves for the piece.
+          piece.legalMoves = [];
+
+          const symbol = piece.symbol;
+          
+          if (symbol === "R"){ // Rook
+            for (let j = 1; j <= 7-x; j++) {
+              piece.legalMoves.push([x+j, y])
+              if (this.chessBoard[x+j][y] !== null){
+                break;
+              }  
+            }
+            for (let j = 1; j <= x; j++) {
+              piece.legalMoves.push([x-j, y])
+              if (this.chessBoard[x-j][y] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= 7-y; j++) {
+              piece.legalMoves.push([x, y+j])
+              if (this.chessBoard[x][y+j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= y; j++) {
+              piece.legalMoves.push([x, y-j])
+              if (this.chessBoard[x][y-j] !== null){
+                break;
+              }
+            }
+
+          } // End of Rook          
+          if (piece.symbol === "B"){ // Bishop
+            for (let j = 1; j <= 7-x; j++) {
+              piece.legalMoves.push([x+j, y+j])
+              if (this.chessBoard[x+j][y+j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= x; j++) {
+              piece.legalMoves.push([x-j, y+j])
+              if (this.chessBoard[x-j][y+j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= 7-x; j++) {
+              piece.legalMoves.push([x+j, y-j])
+              if (this.chessBoard[x+j][y-j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= x; j++) {
+              piece.legalMoves.push([x-j, y-j])
+              if (this.chessBoard[x-j][y-j] !== null){
+                break;
+              }
+            } 
+          } // End of Bishop
+          if (piece.symbol === "Q") { // Queen
+            for (let j = 1; j <= 7-x; j++) {
+              piece.legalMoves.push([x+j, y])
+              if (this.chessBoard[x+j][y] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= x; j++) {
+              piece.legalMoves.push([x-j, y])
+              if (this.chessBoard[x-j][y] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= 7-y; j++) {
+              piece.legalMoves.push([x, y+j])
+              if (this.chessBoard[x][y+j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= y; j++) {
+              piece.legalMoves.push([x, y-j])
+              if (this.chessBoard[x][y-j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= 7-x; j++) {
+              piece.legalMoves.push([x+j, y+j])
+              if (this.chessBoard[x+j][y+j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= x; j++) {
+              piece.legalMoves.push([x-j, y+j])
+              if (this.chessBoard[x-j][y+j] !== null){
+                break;
+              }
+            }
+            for (let j = 1; j <= 7-x; j++) {
+              piece.legalMoves.push([x+j, y-j])
+              if (this.chessBoard[x+j][y-j] !== null){
+                break;
+              }
+            }  
+            for (let j = 1; j <= x; j++) {
+              piece.legalMoves.push([x-j, y-j])
+              if (this.chessBoard[x-j][y-j] !== null){
+                break;
+              }
+            }
+          } // End of Queen  
+          if (piece.symbol === "K") { // King
+              piece.legalMoves.push([x+1, y])
+              piece.legalMoves.push([x-1, y])
+              piece.legalMoves.push([x, y+1])
+              piece.legalMoves.push([x, y-1])
+              piece.legalMoves.push([x+1, y+1])
+              piece.legalMoves.push([x-1, y+1])
+              piece.legalMoves.push([x+1, y-1])
+              piece.legalMoves.push([x-1, y-1])
+
+              // Castling
+              if (!(piece.hasMoved === true)){
+                const row = piece.white ? 0 : 7;
+                const leftRook = this.chessBoard[0][row];
+
+                if (!(leftRook?.hasMoved) && this.chessBoard[1][row] === null && this.chessBoard[2][row] === null && this.chessBoard[3][row] === null){
+                  piece.legalMoves.push([2, row])
+                }
+                const rightRook = this.chessBoard[7][row];
+                if (!(rightRook?.hasMoved) && this.chessBoard[5][row] === null && this.chessBoard[6][row] === null){
+                  piece.legalMoves.push([6, row])
+                }
+              }
+
+
+          } // End of King
+          if (piece.symbol === "N") { // Knight
+            for (let i = -2; i <= 3; i++){
+              for (let j = -2; j <= 3; j++){
+                if (i ** 2 + j ** 2 === 5){
+                  piece.legalMoves.push([x+i, y+j])
+                }
+              }
+            }
+          } // End of Knight
+          if (piece.symbol === "P"){ // Pawn
+            const direction = piece.white ? 1 : -1;
+            const row = piece.white ? 1 : 6;
+            if (this.chessBoard[x][y+direction] === null){
+              piece.legalMoves.push([x, y+direction])
+              if (y === row && this.chessBoard[x][y+direction*2] === null){
+                piece.legalMoves.push([x, y+direction*2])
+              }
+            }
+            if (x < 7 && this.chessBoard[x+1][y+direction] !== null){
+              piece.legalMoves.push([x+1, y+direction])
+            }
+            if (x > 0 && this.chessBoard[x-1][y+direction] !== null){
+              piece.legalMoves.push([x-1, y+direction])
+            }
+
+          } // End of Pawn
+          
+        }
+      }
+    }
+
+    filterOutOfBoundsMoves(piece: Piece): void {
+      piece.legalMoves = piece.legalMoves.filter(move => {
+        if (move[0] >= 0 && move[0] <= 7 && move[1] >= 0 && move[1] <= 7){
+          return true
+        }
+        else{
+          return false
+        }
+      })
+    }
+
+    filterCaptureOwnPiecesMoves(piece: Piece): void {
+      piece.legalMoves = piece.legalMoves.filter(move => {
+        if (this.chessBoard[move[0]][move[1]]?.white !== piece.white){
+          return true
+        }
+        else return false
+        
+      })
+    }
+
+    checkIfPlayerIsInCheck(): void {
+      const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
+
+      this.opponentMarkedSquares.forEach(move => {
+        if (move[0] === kingPosition[0] && move[1] === kingPosition[1]) {
+          this.check = true
+        }
+      });
+    }
+
+    markOpponentSquares(piece: Piece): void {
+      if (piece.white != this.whoseTurn()){
+        for (let z = 0; z < piece.legalMoves.length; z++){
+          const move = piece.legalMoves[z]
+          this.opponentMarkedSquares.add(move)
+        }
+      }
+    }
+
+    filterKingMovesBasedOnOpponentMarkedSquares(king: Piece): void {
+      const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
+
+      king.legalMoves = king.legalMoves.filter(move => {
+        console.log(this.opponentMarkedSquares.has(move));
+        if (this.opponentMarkedSquares.has(move)){
+          return false
+        }
+        else{
+          return true
+        }
+      })
+    }
+
+    // INCOMPLETE
+    filterKingMovesIfInCheck(piece: Piece, kingPosition: Move): void {
+      if (!(this.check)) return;
+      console.log("Check")
+
+      let attackers: [Piece | null, Piece | null] = [null, null]
+          
+      if (piece.legalMoves.includes(kingPosition)){
+        if (attackers[0] === null) attackers[0] = piece
+        else {
+          attackers[1] = piece
+          this.doubleCheck = true
+      }
+      }
+      // If there is 2 attackers, then we can't block the check.
+
+      piece.legalMoves = piece.legalMoves.filter(move => {
+        if (attackers[0]?.legalMoves.includes(move)) return true               
+        return false
+      })
+
+
+      // IF A SIDE HAS NO LEGAL MOVES, THEN IT IS CHECKMATE.
+
+
+    }
+
+    filterPinnedPiecesMoves(piece: Piece): void {
+      // Based on the pinned pieces, we can limit the movement of the pinned pieces.
+      // Start by getting the angle of the pin.
+      // This code is very ugly. I will try to clean it up later.
+      if (this.absolutePinnedPieces.length <= 0) return;
+
+      this.absolutePinnedPieces.forEach(pinnedPiece => {
+        pinnedPiece.legalMoves = pinnedPiece.legalMoves.filter(move => {
+          const angle = pinnedPiece.pinAngle! as [number, number] // example [1, 0] = horizontal pin
+
+          if (angle[0] === 1 && angle[1] === 0 ){
+            for (let i = pinnedPiece.x+1; i < 7; i++){
+              if (move[0] === i && move[1] === pinnedPiece.y) return true
+            }
+          }
+          if (angle[0] === -1 && angle[1] === 0 ){
+            for (let i = pinnedPiece.x-1; i > 0; i--){
+              if (move[0] === i && move[1] === pinnedPiece.y) return true
+            }
+          }
+          if (angle[0] === 0 && angle[1] === 1 ){
+            for (let i = pinnedPiece.y+1; i < 7; i++){
+              if (move[0] === pinnedPiece.x && move[1] === i) return true
+            }
+          }
+          if (angle[0] === 0 && angle[1] === -1 ){
+            for (let i = pinnedPiece.y-1; i > 0; i--){
+              if (move[0] === pinnedPiece.x && move[1] === i) return true
+            }
+          }
+          if (angle[0] === 1 && angle[1] === 1 ){
+            for (let i = 1; i < 7; i++){
+              if (move[0] === pinnedPiece.x+i && move[1] === pinnedPiece.y+i) return true
+            }
+          }
+          if (angle[0] === -1 && angle[1] === 1 ){
+            for (let i = 1; i < 7; i++){
+              if (move[0] === pinnedPiece.x - i && move[1] === pinnedPiece.y+i) return true
+            }
+          }
+          if (angle[0] === 1 && angle[1] === -1 ){
+            for (let i = 1; i < 7; i++){
+              if (move[0] === pinnedPiece.x+i && move[1] === pinnedPiece.y-i) return true
+            }
+          }
+          if (angle[0] === -1 && angle[1] === -1 ){
+            for (let i = 1; i < 7; i++){
+              if (move[0] === pinnedPiece.x-i && move[1] === pinnedPiece.y-i) return true
+            }
+          }
+          return false
+        })
+      }) 
+    }
+
   
     /**
      * Calculates the legal moves for each piece in the chessboard. This effectts the legalMoves array in each piece.
@@ -257,323 +577,27 @@ export class ChessGame{
       this.absolutePinnedPieces = []
 
       const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
+      const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
       const oppositeKingPosition = this.whoseTurn() ? this.blackKingPosition : this.whiteKingPosition
       this.calcAbsolutePinnedPieces(kingPosition)
 
-      // Here we calculate all the legal moves for each piece in the chessthis.chessboard.
-      for (let y = 7; y >= 0; y--) {
-        for (let x = 0; x < this.chessWidth; x++) {
-          if (this.chessBoard[x][y] && this.chessBoard[x][y]?.symbol){
-            // Here we use casting to make sure that the piece is a Piece and not null.
-            const piece: Piece = this.chessBoard[x][y] as Piece;
-            // We need to empty the legalMoves array before we calculate the legal moves for the piece.
-            piece.legalMoves = [];
+      this.calcPseudoLegalMoves();
 
-            const symbol = piece.symbol;
-            
-            if (symbol === "R"){ // Rook
-              for (let j = 1; j <= 7-x; j++) {
-                piece.legalMoves.push([x+j, y])
-                if (this.chessBoard[x+j][y] !== null){
-                  break;
-                }  
-              }
-              for (let j = 1; j <= x; j++) {
-                piece.legalMoves.push([x-j, y])
-                if (this.chessBoard[x-j][y] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= 7-y; j++) {
-                piece.legalMoves.push([x, y+j])
-                if (this.chessBoard[x][y+j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= y; j++) {
-                piece.legalMoves.push([x, y-j])
-                if (this.chessBoard[x][y-j] !== null){
-                  break;
-                }
-              }
+      this.checkIfPlayerIsInCheck();
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        this.filterOutOfBoundsMoves(piece);
+        this.filterCaptureOwnPiecesMoves(piece);
+        this.markOpponentSquares(piece);
+        this.filterKingMovesIfInCheck(piece, kingPosition);
+        this.filterPinnedPiecesMoves(piece);
+      });
+                  
+      this.filterKingMovesBasedOnOpponentMarkedSquares(king)
 
-            } // End of Rook          
-            if (piece.symbol === "B"){ // Bishop
-              for (let j = 1; j <= 7-x; j++) {
-                piece.legalMoves.push([x+j, y+j])
-                if (this.chessBoard[x+j][y+j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= x; j++) {
-                piece.legalMoves.push([x-j, y+j])
-                if (this.chessBoard[x-j][y+j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= 7-x; j++) {
-                piece.legalMoves.push([x+j, y-j])
-                if (this.chessBoard[x+j][y-j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= x; j++) {
-                piece.legalMoves.push([x-j, y-j])
-                if (this.chessBoard[x-j][y-j] !== null){
-                  break;
-                }
-              } 
-            } // End of Bishop
-            if (piece.symbol === "Q") { // Queen
-              for (let j = 1; j <= 7-x; j++) {
-                piece.legalMoves.push([x+j, y])
-                if (this.chessBoard[x+j][y] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= x; j++) {
-                piece.legalMoves.push([x-j, y])
-                if (this.chessBoard[x-j][y] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= 7-y; j++) {
-                piece.legalMoves.push([x, y+j])
-                if (this.chessBoard[x][y+j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= y; j++) {
-                piece.legalMoves.push([x, y-j])
-                if (this.chessBoard[x][y-j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= 7-x; j++) {
-                piece.legalMoves.push([x+j, y+j])
-                if (this.chessBoard[x+j][y+j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= x; j++) {
-                piece.legalMoves.push([x-j, y+j])
-                if (this.chessBoard[x-j][y+j] !== null){
-                  break;
-                }
-              }
-              for (let j = 1; j <= 7-x; j++) {
-                piece.legalMoves.push([x+j, y-j])
-                if (this.chessBoard[x+j][y-j] !== null){
-                  break;
-                }
-              }  
-              for (let j = 1; j <= x; j++) {
-                piece.legalMoves.push([x-j, y-j])
-                if (this.chessBoard[x-j][y-j] !== null){
-                  break;
-                }
-              }
-            } // End of Queen  
-            if (piece.symbol === "K") { // King
-                piece.legalMoves.push([x+1, y])
-                piece.legalMoves.push([x-1, y])
-                piece.legalMoves.push([x, y+1])
-                piece.legalMoves.push([x, y-1])
-                piece.legalMoves.push([x+1, y+1])
-                piece.legalMoves.push([x-1, y+1])
-                piece.legalMoves.push([x+1, y-1])
-                piece.legalMoves.push([x-1, y-1])
-
-                // Castling
-                if (!(piece.hasMoved === true)){
-                  const row = piece.white ? 0 : 7;
-                  const leftRook = this.chessBoard[0][row];
-
-                  if (!(leftRook?.hasMoved) && this.chessBoard[1][row] === null && this.chessBoard[2][row] === null && this.chessBoard[3][row] === null){
-                    piece.legalMoves.push([2, row])
-                  }
-                  const rightRook = this.chessBoard[7][row];
-                  if (!(rightRook?.hasMoved) && this.chessBoard[5][row] === null && this.chessBoard[6][row] === null){
-                    piece.legalMoves.push([6, row])
-                  }
-                }
-
-
-            } // End of King
-            if (piece.symbol === "N") { // Knight
-              for (let i = -2; i <= 3; i++){
-                for (let j = -2; j <= 3; j++){
-                  if (i ** 2 + j ** 2 === 5){
-                    piece.legalMoves.push([x+i, y+j])
-                  }
-                }
-              }
-            } // End of Knight
-            if (piece.symbol === "P"){ // Pawn
-              const direction = piece.white ? 1 : -1;
-              const row = piece.white ? 1 : 6;
-              if (this.chessBoard[x][y+direction] === null){
-                piece.legalMoves.push([x, y+direction])
-                if (y === row && this.chessBoard[x][y+direction*2] === null){
-                  piece.legalMoves.push([x, y+direction*2])
-                }
-              }
-              if (x < 7 && this.chessBoard[x+1][y+direction] !== null){
-                piece.legalMoves.push([x+1, y+direction])
-              }
-              if (x > 0 && this.chessBoard[x-1][y+direction] !== null){
-                piece.legalMoves.push([x-1, y+direction])
-              }
-
-            } // End of Pawn
-
-            // Filter out move that are out of bounds. 
-            piece.legalMoves = piece.legalMoves.filter(move => {
-              if (move[0] >= 0 && move[0] <= 7 && move[1] >= 0 && move[1] <= 7){
-                return true
-              }
-              else{
-                return false
-              }
-            })
-
-            // Filter out moves where you capture your own piece.
-            piece.legalMoves = piece.legalMoves.filter(move => {
-              if (this.chessBoard[move[0]][move[1]] === null){
-                return true
-              }
-              else{
-                if (this.chessBoard[move[0]][move[1]]?.white !== piece.white){
-                  return true
-                }
-                else{
-                  return false
-                }
-              }
-            })
-
-            
-            // Check if the users king is in the set of marked squares.
-            this.opponentMarkedSquares.forEach(move => {
-              if (move[0] === kingPosition[0] && move[1] === kingPosition[1]) {
-                this.check = true
-              }
-            });
-
-
-            // Mark squares the opponent has access to.
-            if (piece.white != this.whoseTurn()){
-              for (let z = 0; z < piece.legalMoves.length; z++){
-                const move = piece.legalMoves[z]
-                this.opponentMarkedSquares.add(move)
-              }
-            }
-
-            
-            const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
-            king.legalMoves = king.legalMoves.filter(move => {
-              this.opponentMarkedSquares.forEach(markedSquare => {
-                console.log(markedSquare)
-                if (move[0] === markedSquare[0] && move[1] === markedSquare[1]) return false
-                return true
-              })
-            })
-            
-
-            // Based on the marked squares from the opponent, king can either move in a unmarked square or have other piece block the check. 
-            if (this.check) {
-              console.log("Check")
-              // Here we force cast the piece to be a Piece and not null. As we know that the piece is a king.
-              
-              // Remove all moves that do not block the check, or that don't eliminate the piece that is checking the king.
-              
-              // Figure out which piece is checking the king. (There can be 2).
-              let attackers: [Piece | null, Piece | null] = [null, null]
-          
-              if (piece.legalMoves.includes(kingPosition)){
-                if (attackers[0] === null) attackers[0] = piece
-                else {
-                  attackers[1] = piece
-                  this.doubleCheck = true
-              }
-              }
-              // If there is 2 attackers, then we can't block the check.
-
-              piece.legalMoves = piece.legalMoves.filter(move => {
-                if (attackers[0]?.legalMoves.includes(move)) return true               
-                return false
-              })
-              
-              
-            }
-            // If a side has no legal moves, then it is checkmate.
-
-
-
-            
-            // Based on the pinned pieces, we can limit the movement of the pinned pieces.
-            // Start by getting the angle of the pin.
-            // This code is very ugly. I will try to clean it up later.
-            if (this.absolutePinnedPieces.length > 0){
-              this.absolutePinnedPieces.forEach(pinnedPiece => {
-                pinnedPiece.legalMoves = pinnedPiece.legalMoves.filter(move => {
-                  const angle = pinnedPiece.pinAngle! as [number, number] // example [1, 0] = horizontal pin
-
-                  if (angle[0] === 1 && angle[1] === 0 ){
-                    for (let i = pinnedPiece.x+1; i < 7; i++){
-                      if (move[0] === i && move[1] === pinnedPiece.y) return true
-                    }
-                  }
-                  if (angle[0] === -1 && angle[1] === 0 ){
-                    for (let i = pinnedPiece.x-1; i > 0; i--){
-                      if (move[0] === i && move[1] === pinnedPiece.y) return true
-                    }
-                  }
-                  if (angle[0] === 0 && angle[1] === 1 ){
-                    for (let i = pinnedPiece.y+1; i < 7; i++){
-                      if (move[0] === pinnedPiece.x && move[1] === i) return true
-                    }
-                  }
-                  if (angle[0] === 0 && angle[1] === -1 ){
-                    for (let i = pinnedPiece.y-1; i > 0; i--){
-                      if (move[0] === pinnedPiece.x && move[1] === i) return true
-                    }
-                  }
-                  if (angle[0] === 1 && angle[1] === 1 ){
-                    for (let i = 1; i < 7; i++){
-                      if (move[0] === pinnedPiece.x+i && move[1] === pinnedPiece.y+i) return true
-                    }
-                  }
-                  if (angle[0] === -1 && angle[1] === 1 ){
-                    for (let i = 1; i < 7; i++){
-                      if (move[0] === pinnedPiece.x - i && move[1] === pinnedPiece.y+i) return true
-                    }
-                  }
-                  if (angle[0] === 1 && angle[1] === -1 ){
-                    for (let i = 1; i < 7; i++){
-                      if (move[0] === pinnedPiece.x+i && move[1] === pinnedPiece.y-i) return true
-                    }
-                  }
-                  if (angle[0] === -1 && angle[1] === -1 ){
-                    for (let i = 1; i < 7; i++){
-                      if (move[0] === pinnedPiece.x-i && move[1] === pinnedPiece.y-i) return true
-                    }
-                  }
-                  return false
-                })
-              })
-            } 
-            
-        }
-      }
+    
     }
 
-
-    // Print the marked squares.
-    this.opponentMarkedSquares.forEach(function(value){
-      //console.log(value)
-    })
-  }
+  
   
   getNotationFromMove(move: Move): string{
     let notation: string
