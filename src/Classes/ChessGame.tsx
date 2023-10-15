@@ -596,11 +596,12 @@ export class ChessGame{
         this.filterOutOfBoundsMoves(piece);
         this.filterCaptureOwnPiecesMoves(piece);
         this.markOpponentSquares(piece);
-        //this.filterKingMovesIfInCheck(piece, kingPosition);
+        this.filterKingMovesIfInCheck(piece, kingPosition);
         //this.filterPinnedPiecesMoves(piece);
       });
                   
       this.filterKingMovesBasedOnOpponentMarkedSquares(king)
+
 
     
     }
