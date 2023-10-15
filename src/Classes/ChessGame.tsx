@@ -1,4 +1,3 @@
-import { abort } from "process";
 import { ChessBoard } from "./ChessBoard"
 import { Piece } from "./ChessBoard";
 import { Move } from "./Move";
@@ -12,7 +11,8 @@ type chessboard = (Piece | null)[][];
 export class ChessGame{
     private chessWidth: number
     private chessHeight: number
-    private chessBoard: (Piece | null)[][];
+    private chessBoard: chessboard;
+
     private moves: Move | null
     private pieces: Piece[]
     private turn: number = 0
@@ -29,7 +29,7 @@ export class ChessGame{
     private draw: boolean = false
     private fen: string 
     private PGN: string
-    private opponentMarkedSquares: Set<Move>  // This will represent the squares that are marked by the opponent player.
+    private opponentMarkedSquares: Move[]  // This will represent the squares that are marked by the opponent player.
     private whiteKingPosition: Move // Position of the white king.
     private blackKingPosition: Move 
     private absolutePinnedPieces: Piece[] = [] // This will be a list of pieces that are pinned.
@@ -50,13 +50,14 @@ export class ChessGame{
         // Starting position
         this.chessBoard = new ChessBoard(this.fen).getBoard();
         this.pieces = new ChessBoard(this.fen).getPieces();
-        this.opponentMarkedSquares = new Set<Move>()
+        this.opponentMarkedSquares = [];
         this.whiteKingPosition = [4, 0] // Starting position for the white king. This will be updated if the king makes a move.
         this.blackKingPosition = [4, 7]
     }
 
 
-    getBoard(): (Piece | null)[][] {
+    getBoard(): chessboard
+   {
         return this.chessBoard;
     }
 
@@ -472,29 +473,27 @@ export class ChessGame{
     markOpponentSquares(piece: Piece): void {
       if (piece.white === this.whoseTurn()) return;
       for (let z = 0; z < piece.legalMoves.length; z++){
-        const move = piece.legalMoves[z]
-        this.opponentMarkedSquares.add(move)
+        const move = piece.legalMoves[z];
+        this.opponentMarkedSquares.push(move);
       }
       
     }
 
+    // INCOMPLETE
     filterKingMovesBasedOnOpponentMarkedSquares(king: Piece): void {
-      const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
-
-      king.legalMoves = king.legalMoves.filter(move => {
-        console.log(this.opponentMarkedSquares.has(move));
-        if (this.opponentMarkedSquares.has(move)){
+      king.legalMoves = king.legalMoves.filter(kingMove => {
+        this.opponentMarkedSquares.some(move => {
+        if (move[0] === kingMove[0] && move[1] === kingMove[0]){
           return false
         }
-        else{
-          return true
-        }
+        else return true
+      })
       })
     }
 
     // INCOMPLETE
     filterKingMovesIfInCheck(piece: Piece, kingPosition: Move): void {
-      if (!(this.check)) return;
+      if (!this.check) return;
       console.log("Check")
 
       let attackers: [Piece | null, Piece | null] = [null, null]
@@ -519,6 +518,7 @@ export class ChessGame{
 
     }
 
+    // 
     filterPinnedPiecesMoves(piece: Piece): void {
       // Based on the pinned pieces, we can limit the movement of the pinned pieces.
       // Start by getting the angle of the pin.
@@ -579,8 +579,8 @@ export class ChessGame{
      * Calculates the legal moves for each piece in the chessboard. This effectts the legalMoves array in each piece.
      */
     calcLegalMoves(): void{
-      this.opponentMarkedSquares.clear()
-      this.absolutePinnedPieces = []
+      this.opponentMarkedSquares = [];
+      this.absolutePinnedPieces = [];
 
       const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
       const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
@@ -599,7 +599,7 @@ export class ChessGame{
         //this.filterPinnedPiecesMoves(piece);
       });
                   
-      //this.filterKingMovesBasedOnOpponentMarkedSquares(king)
+      this.filterKingMovesBasedOnOpponentMarkedSquares(king)
 
     
     }
