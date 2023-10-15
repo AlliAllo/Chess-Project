@@ -76,7 +76,7 @@ export default function ChessBoardComponent(props: Props) {
 
         let marked = undefined
         const xy: Move = [x, y]
-        const op = chessGame.getopponentMarkedSquares()
+        const op = chessGame.getListOfOpponentMarkedSquares()
 
         op.forEach(move => {
           if (move[0] === xy[0] && move[1] === xy[1]) {

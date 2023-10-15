@@ -29,12 +29,14 @@ export class ChessGame{
     private draw: boolean = false
     private fen: string 
     private PGN: string
-    private opponentMarkedSquares: Move[]  // This will represent the squares that are marked by the opponent player.
+    private listOfOpponentMarkedSquares: Move[]  // This will represent the squares that are marked by the opponent player.
+    private mapOfOpponentMarkedSquares: Map<Piece, Move[]>  // Note
     private whiteKingPosition: Move // Position of the white king.
     private blackKingPosition: Move 
     private absolutePinnedPieces: Piece[] = [] // This will be a list of pieces that are pinned.
     private depth: number
     private doubleCheck: boolean = false
+    private kingAttacker: Piece | null = null // This will be a list of pieces that are attacking the king. Note there can be 2 attackers.
    
 
 
@@ -50,7 +52,8 @@ export class ChessGame{
         // Starting position
         this.chessBoard = new ChessBoard(this.fen).getBoard();
         this.pieces = new ChessBoard(this.fen).getPieces();
-        this.opponentMarkedSquares = [];
+        this.listOfOpponentMarkedSquares = [];
+        this.mapOfOpponentMarkedSquares = new Map<Piece, Move[]>();
         this.whiteKingPosition = [4, 0] // Starting position for the white king. This will be updated if the king makes a move.
         this.blackKingPosition = [4, 7]
     }
@@ -85,6 +88,7 @@ export class ChessGame{
 
       this.calcLegalMoves();
 
+      this.check = false;
       return true;
     }
 
@@ -96,8 +100,12 @@ export class ChessGame{
         return this.fen;
     }
 
-    getopponentMarkedSquares(){
-      return this.opponentMarkedSquares
+    getListOfOpponentMarkedSquares(){
+      return this.listOfOpponentMarkedSquares;
+    }
+
+    getMapOfOpponentMarkedSquares(){
+      return this.mapOfOpponentMarkedSquares;
     }
 
     getTurn() {
@@ -435,14 +443,14 @@ export class ChessGame{
       }
     }
 
-    filterOutOfBoundsMoves(piece: Piece): void {
-      piece.legalMoves = piece.legalMoves.filter(move => {
-        if (move[0] >= 0 && move[0] <= 7 && move[1] >= 0 && move[1] <= 7){
-          return true
-        }
-        else{
-          return false
-        }
+    filterOutOfBoundsMoves(): void {
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        piece.legalMoves = piece.legalMoves.filter(move => {
+          if (move[0] >= 0 && move[0] <= 7 && move[1] >= 0 && move[1] <= 7){
+            return true
+          }
+          else return false
+        })
       })
     }
 
@@ -450,76 +458,141 @@ export class ChessGame{
      * Filters the moves where the piece would capture its own pieces.
      * @param piece 
      */
-    filterCaptureOwnPiecesMoves(piece: Piece): void {
-      piece.legalMoves = piece.legalMoves.filter(move => {
-        if (this.chessBoard[move[0]][move[1]]?.white !== piece.white){
-          return true
-        }
-        else return false
-        
+    filterCaptureOwnPiecesMoves(): void {
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        piece.legalMoves = piece.legalMoves.filter(move => {
+          if (this.chessBoard[move[0]][move[1]]?.white !== piece.white){
+            return true
+          }
+          else return false
+        })
       })
     }
 
     checkIfPlayerIsInCheck(): void {
       const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
 
-      this.opponentMarkedSquares.forEach(move => {
-        if (move[0] === kingPosition[0] && move[1] === kingPosition[1]) {
-          this.check = true
+      this.mapOfOpponentMarkedSquares.forEach((moveList, piece) => {
+        if (moveList.some(move => move[0] === kingPosition[0] && move[1] === kingPosition[1])) {
+          this.check = true;
+          this.kingAttacker = piece 
         }
-      });
+      })
     }
 
-    markOpponentSquares(piece: Piece): void {
-      if (piece.white === this.whoseTurn()) return;
-      for (let z = 0; z < piece.legalMoves.length; z++){
-        const move = piece.legalMoves[z];
-        this.opponentMarkedSquares.push(move);
-      }
-      
+    markOpponentSquares(): void {
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        if (piece.white === this.whoseTurn()) return;
+        for (let z = 0; z < piece.legalMoves.length; z++){
+          const move = piece.legalMoves[z];
+          this.listOfOpponentMarkedSquares.push(move);
+          this.mapOfOpponentMarkedSquares.set(piece, piece.legalMoves);
+        }
+      })
     }
 
     /**
-     * Here we filter the king's moves based on the opponent's marked squares. In other words, the king can enter a square that an opponent piece can move to.
+     * Here we filter the king's moves based on the opponent's marked squares. In other words, the king is not allowed  to enter a square that an opponent piece can move to.
      * @param king 
      */
     filterKingMovesBasedOnOpponentMarkedSquares(king: Piece): void {
       king.legalMoves = king.legalMoves.filter(kingMove => {
-        return !this.opponentMarkedSquares.some(move => {
+        return !this.listOfOpponentMarkedSquares.some(move => {
           return move[0] === kingMove[0] && move[1] === kingMove[1];
         });
       });
     }
 
+    /**
+     * 
+     * @returns A list of moves between the king and the attacker. Including the attackers position.
+     */
+    getLineOfAttack(): Move[] {
+      const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
+      if (this.kingAttacker === null) return [];
+      const attacker = this.kingAttacker! as Piece
+      const x =  attacker.x - kingPosition[0]
+      const y =  attacker.y - kingPosition[1] 
+      const angle = [x, y]
+
+      const lineOfAttack: Move[] = []
+
+      if (angle[0] < 0 && angle[1] < 0) {
+        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
+          lineOfAttack.push([kingPosition[0]-i, kingPosition[1]-j])
+        }
+      }
+      if (angle[0] > 0 && angle[1] < 0) {
+        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
+          lineOfAttack.push([kingPosition[0]+i, kingPosition[1]-j])
+        }
+      }
+      if (angle[0] < 0 && angle[1] > 0) {
+        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
+          lineOfAttack.push([kingPosition[0]-i, kingPosition[1]+j])
+        }
+      }
+      if (angle[0] > 0 && angle[1] > 0) {
+        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
+          lineOfAttack.push([kingPosition[0]+i, kingPosition[1]+j])
+        }
+      }
+      if (angle[0] === 0 && angle[1] < 0) {
+        for (let i = 1; i < Math.abs(angle[1]); i++){
+          lineOfAttack.push([kingPosition[0], kingPosition[1]-i])
+        }
+      }
+      if (angle[0] === 0 && angle[1] > 0) {
+        for (let i = 1; i < Math.abs(angle[1]); i++){
+          lineOfAttack.push([kingPosition[0], kingPosition[1]+i])
+        }
+      }
+      if (angle[0] < 0 && angle[1] === 0) {
+        for (let i = 1; i < Math.abs(angle[0]); i++){
+          lineOfAttack.push([kingPosition[0]-i, kingPosition[1]])
+        }
+      }
+      if (angle[0] > 0 && angle[1] === 0) {
+        for (let i = 1; i < Math.abs(angle[0]); i++){
+          lineOfAttack.push([kingPosition[0]+i, kingPosition[1]])
+        }
+      }
+
+      lineOfAttack.push([attacker.x, attacker.y])
+
+      return lineOfAttack
+    }
+
+
+
     // INCOMPLETE
-    filterKingMovesIfInCheck(piece: Piece, kingPosition: Move): void {
+    filterPieceMovesIfInCheck(): void {
       if (!this.check) return;
-      console.log("Check")
+      if (this.kingAttacker?.symbol === "N") return; // Knights can't be blocked.
 
-      let attackers: [Piece | null, Piece | null] = [null, null]
-          
-      if (piece.legalMoves.includes(kingPosition)){
-        if (attackers[0] === null) attackers[0] = piece
-        else {
-          attackers[1] = piece
-          this.doubleCheck = true
-      }
-      }
-      // If there is 2 attackers, then we can't block the check.
+      // Limit movement of all pieces to the line of attack. Aka only let pieces block the check.
+      const lineOfAttack = this.getLineOfAttack();
 
-      piece.legalMoves = piece.legalMoves.filter(move => {
-        if (attackers[0]?.legalMoves.includes(move)) return true               
-        return false
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        if (piece.symbol === "K") return;
+        piece.legalMoves = piece.legalMoves.filter(pieceMove => {
+          return lineOfAttack.some(move => pieceMove[0] === move[0] && pieceMove[1] === move[1])   
+        })
       })
 
-
-      // IF A SIDE HAS NO LEGAL MOVES, THEN IT IS CHECKMATE.
-
+      // Allow the king to move OUT of the line of attack.
+      const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
+      const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
+      
+      king.legalMoves = king.legalMoves.filter(kingMove => {
+        if (kingMove[0] === this.kingAttacker?.x && kingMove[1] === this.kingAttacker?.y) return true; // If the king can capture the attacker, then it can move there.
+        return !lineOfAttack.some(move => kingMove[0] === move[0] && kingMove[1] === move[1])   
+      })
 
     }
 
     // 
-    filterPinnedPiecesMoves(piece: Piece): void {
+    filterPinnedPiecesMoves(): void {
       // Based on the pinned pieces, we can limit the movement of the pinned pieces.
       // Start by getting the angle of the pin.
       // This code is very ugly. I will try to clean it up later.
@@ -579,8 +652,10 @@ export class ChessGame{
      * Calculates the legal moves for each piece in the chessboard. This effectts the legalMoves array in each piece.
      */
     calcLegalMoves(): void{
-      this.opponentMarkedSquares = [];
+      this.listOfOpponentMarkedSquares = [];
+      this.mapOfOpponentMarkedSquares = new Map<Piece, Move[]>;
       this.absolutePinnedPieces = [];
+      this.kingAttacker = null;
 
       const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
       const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
@@ -590,18 +665,17 @@ export class ChessGame{
 
       this.calcPseudoLegalMoves();
 
-      this.checkIfPlayerIsInCheck();
+      this.filterOutOfBoundsMoves();
 
-      this.getListOfPiecesFromBoard().forEach(piece => {
-        this.filterOutOfBoundsMoves(piece);
-        this.filterCaptureOwnPiecesMoves(piece);
-        this.markOpponentSquares(piece);
-        this.filterKingMovesIfInCheck(piece, kingPosition);
-        //this.filterPinnedPiecesMoves(piece);
-      });
-                  
+      this.filterCaptureOwnPiecesMoves();
+      this.markOpponentSquares();
+      this.checkIfPlayerIsInCheck(); // Fix this position.
       this.filterKingMovesBasedOnOpponentMarkedSquares(king)
+      this.filterPieceMovesIfInCheck();
+      //this.filterPinnedPiecesMoves(piece);
+  
 
+      
 
     
     }
