@@ -12,8 +12,6 @@ export class ChessGame{
     private chessWidth: number
     private chessHeight: number
     private chessBoard: chessboard;
-
-    private moves: Move | null
     private pieces: Piece[]
     private turn: number = 0
     private check: boolean = false
@@ -21,9 +19,6 @@ export class ChessGame{
     private staleMate: boolean = false
     private moveCount: number = 0 // This is used for the 50 move rule. - When piece is captured counter is reset.
     private threeFoldRepetition: boolean = false
-    private castling: boolean = false
-    private queencastling: boolean = false
-    private kingcastling: boolean = false
     private promotion: boolean = false
     private winner: boolean | null = null // True means white, false means black.
     private draw: boolean = false
@@ -42,9 +37,7 @@ export class ChessGame{
 
     constructor(){
         this.chessWidth = 8
-        this.chessHeight = 8
-        this.moves = null
-        
+        this.chessHeight = 8        
         this.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
         this.depth = 3 // Look 3 moves ahead and evaluate the this.chessboard.
         this.PGN = ""
@@ -70,6 +63,33 @@ export class ChessGame{
       else this.blackKingPosition = [piece.x, piece.y]
     }
 
+    castleKing(piece: Piece, move: Move): boolean {
+      if (piece.symbol === "K" && (move[0] <= 6 || move[0] >= 2)) {
+        const row = piece.white ? 0 : 7;
+        const leftSideCastling = move[0] < 4
+        const rook = leftSideCastling ? this.chessBoard[0][row] as Piece : this.chessBoard[7][row] as Piece;
+        
+        const newKingPosition = leftSideCastling ? 2 : 6
+        const newRookPosition = leftSideCastling ? 3 : 5
+
+        const newRook: Piece = { ...rook, x: newRookPosition, hasMoved: true };    
+        const newKing: Piece = { ...piece, x: newKingPosition, hasMoved: true };
+
+        this.chessBoard[piece.x][piece.y] = null;
+        this.chessBoard[rook.x][rook.y] = null;
+
+        this.chessBoard[newKingPosition][piece.y] = newKing;
+        this.chessBoard[newRookPosition][piece.y] = newRook;
+
+        this.updateKingPosition(newKing);
+        this.addNotation(move, piece, false, this.check, !leftSideCastling);
+
+
+        return true;
+      }
+      return false;
+    }
+
     makeMove(piece: Piece, move: Move): boolean {
       if (piece.white !== this.whoseTurn()) return false;
       if (!piece.legalMoves.some(a => a[0] === move[0] && a[1] === move[1])) return false;
@@ -78,16 +98,24 @@ export class ChessGame{
 
       const capture: boolean = this.chessBoard[move[0]][move[1]] !== null;
 
-      const newPiece: Piece = { ...piece, x: move[0], y: move[1], hasMoved: true };    
-      this.chessBoard[piece.x][piece.y] = null; 
-      this.chessBoard[move[0]][move[1]] = newPiece;
       
-      this.updateKingPosition(piece);
+      const castling = this.castleKing(piece, move);
 
-      this.addNotation(move, piece, capture, this.check, null);
+      if (!castling){
+        const newPiece: Piece = { ...piece, x: move[0], y: move[1], hasMoved: true };    
+        this.chessBoard[piece.x][piece.y] = null; 
+        this.chessBoard[move[0]][move[1]] = newPiece;
+
+        this.updateKingPosition(newPiece);
+        this.addNotation(move, piece, capture, this.check, null);
+
+      }
+      
+
+
+      
 
       this.calcLegalMoves();
-
       this.check = false;
       return true;
     }
@@ -269,6 +297,7 @@ export class ChessGame{
           }
         }
       }
+
     }
 
     calcPseudoLegalMoves(){
@@ -396,21 +425,6 @@ export class ChessGame{
               piece.legalMoves.push([x+1, y-1])
               piece.legalMoves.push([x-1, y-1])
 
-              // Castling
-              if (!(piece.hasMoved === true)){
-                const row = piece.white ? 0 : 7;
-                const leftRook = this.chessBoard[0][row];
-
-                if (!(leftRook?.hasMoved) && this.chessBoard[1][row] === null && this.chessBoard[2][row] === null && this.chessBoard[3][row] === null){
-                  piece.legalMoves.push([2, row])
-                }
-                const rightRook = this.chessBoard[7][row];
-                if (!(rightRook?.hasMoved) && this.chessBoard[5][row] === null && this.chessBoard[6][row] === null){
-                  piece.legalMoves.push([6, row])
-                }
-              }
-
-
           } // End of King
           if (piece.symbol === "N") { // Knight
             for (let i = -2; i <= 3; i++){
@@ -480,9 +494,25 @@ export class ChessGame{
       })
     }
 
-    markOpponentSquares(): void {
+    /**
+     * Mark the squares a pawn can capture. This is used to filter the king's moves.
+     * @param pawn 
+     */
+    pawnOpponentSquares(pawn: Piece): void {
+      const direction = pawn.white ? 1 : -1;
+      this.listOfOpponentMarkedSquares.push([pawn.x+1, pawn.y+direction]);
+      this.listOfOpponentMarkedSquares.push([pawn.x-1, pawn.y+direction]);
+      this.mapOfOpponentMarkedSquares.set(pawn, [[pawn.x+1, pawn.y+direction], [pawn.x-1, pawn.y+direction]]);
+    }
+
+    markOpponentSquares(): void { // This function will mark the squares that the opponent can move to.
+      // This function will be used to convert from psuedo legal moves to legal moves.
       this.getListOfPiecesFromBoard().forEach(piece => {
         if (piece.white === this.whoseTurn()) return;
+        if (piece.symbol === "P") {
+          this.pawnOpponentSquares(piece);
+          return;
+        }
         for (let z = 0; z < piece.legalMoves.length; z++){
           const move = piece.legalMoves[z];
           this.listOfOpponentMarkedSquares.push(move);
@@ -505,7 +535,7 @@ export class ChessGame{
 
     /**
      * 
-     * @returns A list of moves between the king and the attacker. Including the attackers position.
+     * @returns A list of moves from the attacker to the king and 1 square beyond. Including the attackers position.
      */
     getLineOfAttack(): Move[] {
       const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
@@ -517,48 +547,58 @@ export class ChessGame{
 
       const lineOfAttack: Move[] = []
 
-      if (angle[0] < 0 && angle[1] < 0) {
-        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
-          lineOfAttack.push([kingPosition[0]-i, kingPosition[1]-j])
-        }
-      }
-      if (angle[0] > 0 && angle[1] < 0) {
-        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
-          lineOfAttack.push([kingPosition[0]+i, kingPosition[1]-j])
+      if (angle[0] > 0 && angle[1] > 0) {
+        for (let i = 1; i <= 7-Math.min(attacker.x, attacker.y); i++){
+          lineOfAttack.push([attacker.x-i, attacker.y-i])
         }
       }
       if (angle[0] < 0 && angle[1] > 0) {
-        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
-          lineOfAttack.push([kingPosition[0]-i, kingPosition[1]+j])
+        for (let i = 1; i <= 7-Math.min(attacker.x, attacker.y); i++){
+          lineOfAttack.push([attacker.x+i, attacker.y-i])
         }
       }
-      if (angle[0] > 0 && angle[1] > 0) {
-        for (let i = 1, j = 1; i < Math.abs(angle[0]); i++, j++){
-          lineOfAttack.push([kingPosition[0]+i, kingPosition[1]+j])
+      if (angle[0] > 0 && angle[1] < 0) {
+        for (let i = 1; i <= 7-Math.min(attacker.x, attacker.y); i++){
+          lineOfAttack.push([attacker.x-i, attacker.y+i])
         }
       }
-      if (angle[0] === 0 && angle[1] < 0) {
-        for (let i = 1; i < Math.abs(angle[1]); i++){
-          lineOfAttack.push([kingPosition[0], kingPosition[1]-i])
+      if (angle[0] < 0 && angle[1] < 0) {
+        for (let i = 1; i <= 7-Math.min(attacker.x, attacker.y); i++){
+          lineOfAttack.push([attacker.x+i, attacker.y+i])
         }
       }
       if (angle[0] === 0 && angle[1] > 0) {
-        for (let i = 1; i < Math.abs(angle[1]); i++){
-          lineOfAttack.push([kingPosition[0], kingPosition[1]+i])
+        for (let i = 1; i <= 7-attacker.y; i++){
+          lineOfAttack.push([attacker.x, attacker.y-i])
         }
       }
-      if (angle[0] < 0 && angle[1] === 0) {
-        for (let i = 1; i < Math.abs(angle[0]); i++){
-          lineOfAttack.push([kingPosition[0]-i, kingPosition[1]])
+      if (angle[0] === 0 && angle[1] < 0) {
+        for (let i = 1; i <= 7-attacker.y; i++){
+          lineOfAttack.push([attacker.x, attacker.y+i])
         }
       }
       if (angle[0] > 0 && angle[1] === 0) {
-        for (let i = 1; i < Math.abs(angle[0]); i++){
-          lineOfAttack.push([kingPosition[0]+i, kingPosition[1]])
+        for (let i = 1; i <= 7-attacker.x; i++){
+          lineOfAttack.push([attacker.x-i, attacker.y])
+        }
+      }
+      if (angle[0] < 0 && angle[1] === 0) {
+        for (let i = 1; i <= 7-attacker.x; i++){
+          lineOfAttack.push([attacker.x+i, attacker.y])
         }
       }
 
-      lineOfAttack.push([attacker.x, attacker.y])
+     
+
+
+
+      
+
+
+
+      lineOfAttack.push([attacker.x, attacker.y]) // Add attackers position to the line of attack.
+      console.log(angle)
+      console.log(lineOfAttack)
 
       return lineOfAttack
     }
@@ -566,28 +606,33 @@ export class ChessGame{
 
 
     // INCOMPLETE
-    filterPieceMovesIfInCheck(): void {
+    filterPieceMovesIfInCheck(king: Piece): void {
       if (!this.check) return;
-      if (this.kingAttacker?.symbol === "N") return; // Knights can't be blocked.
 
       // Limit movement of all pieces to the line of attack. Aka only let pieces block the check.
       const lineOfAttack = this.getLineOfAttack();
 
       this.getListOfPiecesFromBoard().forEach(piece => {
         if (piece.symbol === "K") return;
-        piece.legalMoves = piece.legalMoves.filter(pieceMove => {
-          return lineOfAttack.some(move => pieceMove[0] === move[0] && pieceMove[1] === move[1])   
-        })
+        if (this.kingAttacker?.symbol === "N") {  // Special case for knights.
+          piece.legalMoves = piece.legalMoves.filter(pieceMove => {
+            return pieceMove[0] === this.kingAttacker?.x && pieceMove[1] === this.kingAttacker?.y
+          })
+        }
+        else {
+          piece.legalMoves = piece.legalMoves.filter(pieceMove => {
+            return lineOfAttack.some(move => pieceMove[0] === move[0] && pieceMove[1] === move[1])   
+          })
+        }
       })
-
+      console.log("check")
       // Allow the king to move OUT of the line of attack.
-      const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
-      const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
       
       king.legalMoves = king.legalMoves.filter(kingMove => {
         if (kingMove[0] === this.kingAttacker?.x && kingMove[1] === this.kingAttacker?.y) return true; // If the king can capture the attacker, then it can move there.
         return !lineOfAttack.some(move => kingMove[0] === move[0] && kingMove[1] === move[1])   
       })
+
 
     }
 
@@ -647,6 +692,26 @@ export class ChessGame{
       }) 
     }
 
+    addCasltingMoves(king: Piece): void {
+       // Left side castling
+       const row = king.white ? 0 : 7;
+       const leftRook = this.chessBoard[0][row];
+       const emptyLane = this.chessBoard[1][row] === null && this.chessBoard[2][row] === null && this.chessBoard[3][row] === null;
+       if (leftRook && leftRook.symbol === "R" && leftRook.hasMoved === false && emptyLane){
+         king.legalMoves.push([2, row])
+         king.legalMoves.push([1, row])
+         king.legalMoves.push([0, row])
+       }
+
+        // Right side castling
+        const rightRook = this.chessBoard[7][row];
+        const emptyLane2 = this.chessBoard[5][row] === null && this.chessBoard[6][row] === null;
+        if (rightRook && rightRook.symbol === "R" && rightRook.hasMoved === false && emptyLane2){
+          king.legalMoves.push([6, row])
+          king.legalMoves.push([7, row])
+        }
+    }
+
   
     /**
      * Calculates the legal moves for each piece in the chessboard. This effectts the legalMoves array in each piece.
@@ -661,7 +726,7 @@ export class ChessGame{
       const king = this.chessBoard[kingPosition[0]][kingPosition[1]]! as Piece
       //const oppositeKingPosition = this.whoseTurn() ? this.blackKingPosition : this.whiteKingPosition
 
-      //this.calcAbsolutePinnedPieces(kingPosition)   -- INCOMPLETE
+      this.calcAbsolutePinnedPieces(kingPosition)
 
       this.calcPseudoLegalMoves();
 
@@ -671,12 +736,10 @@ export class ChessGame{
       this.markOpponentSquares();
       this.checkIfPlayerIsInCheck(); // Fix this position.
       this.filterKingMovesBasedOnOpponentMarkedSquares(king)
-      this.filterPieceMovesIfInCheck();
-      //this.filterPinnedPiecesMoves(piece);
-  
+      this.filterPieceMovesIfInCheck(king);
+      this.filterPinnedPiecesMoves();
 
-      
-
+      this.addCasltingMoves(king);
     
     }
 
