@@ -1,7 +1,7 @@
 import React, { ReactNode, useRef, useCallback, useState, useMemo, useEffect  } from 'react';
 import Tile from './TileComponent';
 import { Piece } from '../Classes/ChessBoard';
-import { Move } from '../Classes/Move';
+import { Square } from '../Classes/ChessGame';
 
 import { pieceStyle } from "./ChessPieceComponent"
 import './CSS/ChessBoard.css';
@@ -75,7 +75,7 @@ export default function ChessBoardComponent(props: Props) {
         }
 
         let marked = undefined
-        const xy: Move = [x, y]
+        const xy: Square = [x, y]
         const op = chessGame.getListOfOpponentMarkedSquares()
 
         op.forEach(move => {

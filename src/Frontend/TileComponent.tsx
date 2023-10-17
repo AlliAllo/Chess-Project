@@ -2,7 +2,7 @@ import React, { ReactNode, CSSProperties, useState } from 'react';
 import { Piece } from '../Classes/ChessBoard';
 import './CSS/Tile.css';
 import ChessPiece from "./ChessPieceComponent"
-import { Move } from '../Classes/Move';
+import { Square } from '../Classes/ChessGame';
 
 interface TileProps {
   piece: Piece | null

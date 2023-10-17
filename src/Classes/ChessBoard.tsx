@@ -1,6 +1,6 @@
 // Guide to chess notation: https://www.chess.com/terms/chess-notation
-import { Move } from './Move';
- 
+import { Square } from './ChessGame';
+import { Chessboard } from './ChessGame';
 
 import WhiteKing from '../Assets/whiteKing.png';
 import WhitePawn from '../Assets/whitePawn.png';
@@ -26,7 +26,7 @@ export interface Piece{
     white: boolean
     hasMoved?: boolean
     symbol: string | undefined // K, P, N  etc.
-    legalMoves: Move[]
+    legalMoves: Square[]
 
     pinAngle?: [number, number]
 
@@ -37,33 +37,26 @@ export interface Piece{
 
 
 export class ChessBoard {
-  
-    private vSize = 8
-    private hSize = 8
     private pieces: Piece[] = [];
-
   
     // [y][x] - [0][0] = top left
-    
     private board: (Piece | null)[][] = []
 
   
     constructor(fen: string){
-
         //initialize the board
         this.createBoard(fen) 
-        
     }
     
 
-
-    getBoard(): (Piece | null)[][] {
+    getBoard(): Chessboard {
       return this.board;
     }
 
     getPieces(): Piece[] {
       return this.pieces;
     }
+
     /*
     Make chessboard by using FEN notation. Might include PGN later on.
     */
