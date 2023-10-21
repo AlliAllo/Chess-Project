@@ -1,5 +1,6 @@
 import { ChessBoard } from "./ChessBoard"
 import { Piece } from "./ChessBoard";
+import { useCallback } from "react";
 
 /*
 Here we create the ChessGame. 
@@ -9,8 +10,9 @@ export type Chessboard = (Piece | null)[][];
 export type Square = [number, number]
 
 export class ChessGame{
-    private chessWidth: number
-    private chessHeight: number
+    private chessWidth: number;
+    private chessHeight: number;
+    private ChessBoard: ChessBoard;
     private chessBoard: Chessboard;
     private pieces: Piece[]
     private turn: number = 0
@@ -19,7 +21,6 @@ export class ChessGame{
     private staleMate: boolean = false
     private moveCount: number = 0 // This is used for the 50 move rule. - When piece is captured counter is reset.
     private threeFoldRepetition: boolean = false
-    private promotion: boolean = false
     private winner: boolean | null = null // True means white, false means black.
     private draw: boolean = false
     private fen: string 
@@ -33,28 +34,48 @@ export class ChessGame{
     private doubleCheck: boolean = false
     private kingAttacker: Piece | null = null // This will be used to store the piece that is attacking the king.
     private doubleSquarePawnMove: boolean = false // This will be used to check if a pawn has moved 2 squares. This is used for en passant.  
-    private doubleSquarePawnXPosition: number = 0 // This will be used to check if a pawn has moved 2 squares. This is used for en passant.  
+    private doubleSquarePawnXPosition: number = 0
+    private promotion: boolean = false
+    private promotionInformation: {piece: Piece, move: Square} | null = null
 
 
 
     constructor(){
         this.chessWidth = 8
         this.chessHeight = 8
-        
         this.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
         // Starting position
-        this.chessBoard = new ChessBoard(this.fen).getBoard();
+        this.ChessBoard = new ChessBoard(this.fen);
+        this.chessBoard = this.ChessBoard.getBoard();
         this.pieces = new ChessBoard(this.fen).getPieces();
         this.listOfOpponentMarkedSquares = [];
         this.mapOfOpponentMarkedSquares = new Map<Piece, Square[]>();
         this.whiteKingPosition = [4, 0] // Starting position for the white king. This will be updated if the king makes a move.
         this.blackKingPosition = [4, 7]
+
+        this.calcLegalMoves();
     }
 
 
     getBoard(): Chessboard {
         return this.chessBoard;
+    }
+
+    getPromotion(): boolean {
+      return this.promotion;
+    }
+
+    setPromotion(promotion: boolean): void {
+      this.promotion = promotion;
+    }
+
+    getPromotionInformation(): {piece: Piece, move: Square} | null {
+      return this.promotionInformation;
+    }
+
+    setPromotionInformationNull(): void {
+      this.promotionInformation = null;
     }
 
     updateKingPosition(piece: Piece): void {
@@ -64,7 +85,7 @@ export class ChessGame{
     }
 
     castleKing(piece: Piece, move: Square): boolean {
-      if (piece.symbol === "K" && (move[0] <= 6 || move[0] >= 2) && !this.check) {
+      if (piece.symbol === "K" && piece.hasMoved === false && (move[0] >= 6 || move[0] <= 2) && !this.check) {
         const row = piece.white ? 0 : 7;
         const leftSideCastling = move[0] < 4
         const rook = leftSideCastling ? this.chessBoard[0][row] as Piece : this.chessBoard[7][row] as Piece;
@@ -105,25 +126,59 @@ export class ChessGame{
       return false;
     }
 
+    /**
+     * This function is called in the frontend when the user selects a piece to promote to.
+     * @param newPieceType 
+     * @returns 
+     */
+    makePawnPromotion(newPieceType: string): void {
+      if (!this.promotionInformation) return;
+
+      const piece = this.promotionInformation.piece;
+      const move = this.promotionInformation.move;
+
+      const newValue = this.ChessBoard.getPieceSymbolToValue().get(newPieceType) as number
+      const newImageURL = this.ChessBoard.getPieceSymbolToImageURL().get(newPieceType)?.get(piece.white) as string
+
+      const newPiece: Piece = { ...piece, symbol: newPieceType, x: move[0], y: move[1], value: newValue, imageURL: newImageURL};
+      const capture = this.chessBoard[move[0]][move[1]] !== null;
+
+      this.chessBoard[piece.x][piece.y] = null;
+      this.chessBoard[move[0]][move[1]] = newPiece;
+
+      this.addNotation(move, piece, capture, null, newPieceType);
+      
+      this.makeMove(piece, move);
+     
+    }
+
     makeMove(piece: Piece, move: Square): boolean {
       if (piece.white !== this.whoseTurn()) return false;
       if (!piece.legalMoves.some(a => a[0] === move[0] && a[1] === move[1])) return false;
       if (piece.x === move[0] && piece.y === move[1]) return false;
+      if (piece.symbol === "P" && (move[1] === 0 || move[1] === 7) && !this.promotion) { // Pawn promotion
+        // We'll need to store some information about the pawn promotion.
+        this.promotionInformation = {piece: piece, move: move};
+        this.promotion = true;
+        return false;
+      }
+
       this.turn++;
 
-      const capture: boolean = this.chessBoard[move[0]][move[1]] !== null;
 
       const enPassant = this.enPassant(piece, move);
       const castling = this.castleKing(piece, move);
 
-      if (!castling && !enPassant){
+
+      if (!castling && !enPassant && !this.promotion){
+        const capture: boolean = this.chessBoard[move[0]][move[1]] !== null;
+
         const newPiece: Piece = { ...piece, x: move[0], y: move[1], hasMoved: true };    
         this.chessBoard[piece.x][piece.y] = null; 
         this.chessBoard[move[0]][move[1]] = newPiece;
 
         this.updateKingPosition(newPiece);
         this.addNotation(move, piece, capture, null);
-
       }
       
       if (piece.symbol === "P" && Math.abs(piece.y - move[1]) === 2) {
@@ -131,10 +186,15 @@ export class ChessGame{
         this.doubleSquarePawnXPosition = piece.x;
       }
 
-
-      this.calcLegalMoves();
+      piece.hasMoved = true;
       this.check = false;
       this.doubleCheck = false;
+      this.doubleSquarePawnMove = false;
+      this.doubleSquarePawnXPosition = 0;
+      this.promotion = false;
+      this.promotionInformation = null;
+      this.calcLegalMoves();
+
       return true;
     }
 
@@ -587,6 +647,8 @@ export class ChessGame{
     }
 
     addCasltingMoves(king: Piece): void {
+      if (this.check) return;
+      if (king.hasMoved === true) return;
        // Left side castling
        const row = king.white ? 0 : 7;
        const leftRook = this.chessBoard[0][row];
@@ -643,13 +705,11 @@ export class ChessGame{
       this.filterPinnedPiecesMoves();
 
       this.addCasltingMoves(king);
-      
-      console.log(this.absolutePinnedPieces)
 
     }
 
 
-  addNotation(square: Square, pieceMoved: Piece, capture: boolean, castle: boolean | null){
+  addNotation(square: Square, pieceMoved: Piece, capture: boolean, castle: boolean | null, promotionPieceType?: string){
     // Move needs more information. We need to know exatcly which piece is moving. Not just the type of piece.
     const actualTurn = Math.ceil(this.turn/2)
 
@@ -661,26 +721,26 @@ export class ChessGame{
     if (!this.whoseTurn()){ // White's turn
       this.PGN += actualTurn + ". "
     }
-    else{ // Black's turn
-      
-    }
+  
     if (castle === true) this.PGN += "O-O"
     else if (castle === false) this.PGN += "O-O-O"
     else {
-    
-    if (pieceMoved.symbol === "P"){
-      if (capture){
-        this.PGN += pieceNotation
+      if (pieceMoved.symbol === "P"){
+        if (capture){
+          this.PGN += pieceNotation
+        }
       }
-    }
-    else this.PGN += pieceMoved.symbol // This is the piece that is moving.
-    if (capture) this.PGN += "x"
 
-    this.PGN += squareNotation+(square[1]+1 ) // This is the location for the move.
+      else this.PGN += pieceMoved.symbol // This is the piece that is moving.
+      if (capture) this.PGN += "x"
+
+      this.PGN += squareNotation+(square[1]+1 ) // This is the location for the move.
     }
 
 
     if (this.check) this.PGN += "+"
+    if (promotionPieceType) this.PGN += "=" + promotionPieceType;
+
     this.PGN += " "
 
     // Check for checkmate, draw, or win.

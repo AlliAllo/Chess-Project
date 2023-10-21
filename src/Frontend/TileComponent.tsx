@@ -6,7 +6,7 @@ import { Square } from '../Classes/ChessGame';
 
 interface TileProps {
   piece: Piece | null
-  tileIsWhite: boolean
+  tileIsWhite: boolean | undefined
   legalTile: boolean | undefined
   grabbedPiece?: Piece | null
   children?: ReactNode
@@ -14,8 +14,9 @@ interface TileProps {
   y: number
   color?: string
 
-  onStartDragging: (thisPiece: Piece | null, e: React.MouseEvent) => void
-  onDrop: (x: number, y: number) => void
+  onStartDragging: ((thisPiece: Piece | null, e: React.MouseEvent) => void) | undefined
+  onDrop: ((x: number, y: number) => void) | undefined
+  onPromotionClick?: (promotion: string) => void
 }
   
   
@@ -26,7 +27,7 @@ export default function Tile(props: TileProps) {
 
   const drop = (grabbedPiece: Piece | null | undefined, e: React.MouseEvent) => {
 
-    if (grabbedPiece ){
+    if (grabbedPiece && props.onDrop){
       props.onDrop(props.x, props.y) 
     }
   };
@@ -93,7 +94,7 @@ export default function Tile(props: TileProps) {
     onMouseUp={e => drop(props.grabbedPiece, e)} 
     //onMouseDown={selectedTile}
     onContextMenu={e => highlightTile(e)}>
-        {props.piece  && <ChessPiece piece={props.piece}  onStartDragging={props.onStartDragging} />}
+        {props.piece  && <ChessPiece piece={props.piece}  onStartDragging={props.onStartDragging} onPromotionClick={props.onPromotionClick}/>}
         {props.legalTile && <div className="legalTile centered" style={legalTileStyle}></div>}
         {props.y === 0 && <div style={NotationStyle} className="xNotation">{xNotation[props.x]}</div>}
         {props.x === 0 && <div style={NotationStyle} className="yNotation">{props.y+1}</div>}

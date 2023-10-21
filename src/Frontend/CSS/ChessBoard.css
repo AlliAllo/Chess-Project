@@ -6,6 +6,8 @@
     grid-template-rows: repeat(8, 100px);
     justify-content: center;
     align-items: center;
+    user-select: none;
+
   }
 .chessboard .tile .chessPiece:hover {
     cursor: grab;
@@ -15,6 +17,38 @@
     cursor: grabbing;
 }
 
-.ghostPiece{
+.ghostPiece {
     pointer-events: none;
+    user-select: none;
+}
+
+.pawnPromotion {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    background-color: white;
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    user-select: none;
+    
+}
+
+.pawnPromotionHalfSquare {
+    width: 100px;
+    height: 50px;
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    z-index: 1;
+    background-color: rgb(241 241 241);
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    
+}
+
+.pawnPromotion:hover {
+    cursor: grab;
 }

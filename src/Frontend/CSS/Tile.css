@@ -1,3 +1,7 @@
+.tile{
+    user-select: none;
+}
+
 .tile .chessPiece:hover {
     cursor: grab;
 }

@@ -25,7 +25,7 @@ export interface Piece{
     value?: number
     white: boolean
     hasMoved?: boolean
-    symbol: string | undefined // K, P, N  etc.
+    symbol: string // K, P, N  etc.
     legalMoves: Square[]
 
     pinAngle?: [number, number]
@@ -38,14 +38,34 @@ export interface Piece{
 
 export class ChessBoard {
     private pieces: Piece[] = [];
-  
+    private pieceSymbolToValue: Map<string, number>;
+    private pieceSymbolToImageURL: Map<string, Map<boolean, string>>;
     // [y][x] - [0][0] = top left
     private board: (Piece | null)[][] = []
 
   
     constructor(fen: string){
-        //initialize the board
-        this.createBoard(fen) 
+      this.pieceSymbolToValue = new Map<string, number>([
+        ['K', Number.MAX_SAFE_INTEGER],
+        ['Q', 9],
+        ['R', 5],
+        ['B', 3],
+        ['N', 3],
+        ['P', 1]]);
+
+      this.pieceSymbolToImageURL = new  Map<string, Map<boolean, string>>([
+        ['K', new Map([[true, WhiteKing], [false, BlackKing]])],
+        ['Q', new Map([[true, WhiteQueen], [false, BlackQueen]])],
+        ['R', new Map([[true, WhiteRook], [false, BlackRook]])],
+        ['B', new Map([[true, WhiteBishop], [false, BlackBishop]])],
+        ['N', new Map([[true, WhiteKnight], [false, BlackKnight]])],
+        ['P', new Map([[true, WhitePawn], [false, BlackPawn]])]]);
+
+
+      //initialize the board
+      this.createBoard(fen);
+
+
     }
     
 
@@ -55,6 +75,14 @@ export class ChessBoard {
 
     getPieces(): Piece[] {
       return this.pieces;
+    }
+
+    getPieceSymbolToValue(): Map<string, number> {
+      return this.pieceSymbolToValue;
+    }
+
+    getPieceSymbolToImageURL(): Map<string, Map<boolean, string>> {
+      return this.pieceSymbolToImageURL;
     }
 
     /*
@@ -72,7 +100,6 @@ export class ChessBoard {
       let value: number = 0
       let white: boolean 
       let hasMoved: boolean
-      let symbol: string = "symbol"
 
       /*
       const pieceFromSymbom = new Map<string, string>([
@@ -93,61 +120,21 @@ export class ChessBoard {
         }
 
         else {
-          if (char === char.toLowerCase()){
-            white = false
-            char = char.toUpperCase()
+          if (char === char.toLowerCase()) white = false
+          else white = true
 
-          }
-          else{
-            white = true
-          }
-
-          if (char === "R" ){
-            symbol = char 
-            value = 5
-            imageURL = white ? WhiteRook : BlackRook
-          }
-
-          if (char === "N" ){
-            symbol = char
-            value = 3
-            imageURL = white ? WhiteKnight : BlackKnight
-
-  
-          }
-          if (char === "B" ){
-            symbol = char
-            value = 3
-            imageURL = white ? WhiteBishop : BlackBishop
-
-  
-          }
-          if (char === "Q"){
-            symbol = char
-            value = 9
-            imageURL = white ? WhiteQueen : BlackQueen
-
-  
-          }
-          if (char === "K"){
-            symbol = char
-            value = Number.MAX_SAFE_INTEGER
-            imageURL = white ? WhiteKing : BlackKing
-
-  
-          }
-          if (char === "P"){
-            symbol = char 
-            value = 1
-            imageURL = white ? WhitePawn : BlackPawn
-          }
+          char = char.toUpperCase()
 
           if (x === 8){
             x = 7
           }
 
+          value = this.pieceSymbolToValue.get(char) as number
+          imageURL = this.pieceSymbolToImageURL.get(char)?.get(white) as string
+          
+
           hasMoved = false
-          const piece: Piece = {imageURL: imageURL, x: x, y: y, value: value, white: white, hasMoved: hasMoved, symbol: symbol, legalMoves: []}
+          const piece: Piece = {imageURL: imageURL, x: x, y: y, value: value, white: white, hasMoved: hasMoved, symbol: char, legalMoves: []}
 
           this.board[x][y] = piece 
           // remember how board looks. We start top left and loop right. Then down and repeat. Piece, Piece... 6 times, Piece, 7 times, Null.. 7 times.

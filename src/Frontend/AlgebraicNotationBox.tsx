@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import './CSS/NotationBox.css';
 
 interface NotationProps {
@@ -25,7 +24,6 @@ export default function AlgebraicNotationBox(props: NotationProps) {
 
   return (
     <div className="algebraic-notation-box">
-
       {props.notation }
       <button className="copyButton" onClick={handleCopy}>Copy to Clipboard</button>
 
