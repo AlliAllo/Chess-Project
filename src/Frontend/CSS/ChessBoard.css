@@ -52,3 +52,10 @@
 .pawnPromotion:hover {
     cursor: grab;
 }
+
+.ConfettiExplosion {
+    position: absolute;
+    
+    z-index: 1;
+    user-select: none;
+}

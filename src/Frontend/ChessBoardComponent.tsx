@@ -1,4 +1,4 @@
-import React, { ReactNode, useRef, useCallback, useState, useMemo, useEffect  } from 'react';
+import React, { ReactNode, useRef, useCallback, useState, useMemo, useEffect, CSSProperties  } from 'react';
 import Tile from './TileComponent';
 import PawnPromotion from './PawnPromotionComponent';
 
@@ -9,18 +9,8 @@ import { pieceStyle } from "./ChessPieceComponent"
 import './CSS/ChessBoard.css';
 import { ChessGame } from '../Classes/ChessGame';
 
-import WhiteKing from '../Assets/whiteKing.png';
-import WhitePawn from '../Assets/whitePawn.png';
-import WhiteRook from '../Assets/whiteRook.png';
-import WhiteBishop from '../Assets/whiteBishop.png';
-import WhiteQueen from '../Assets/whiteQueen.png';
-import WhiteKnight from '../Assets/whiteKnight.png';
-import BlackKing from '../Assets/blackKing.png';
-import BlackPawn from '../Assets/blackPawn.png';
-import BlackRook from '../Assets/blackRook.png';
-import BlackBishop from '../Assets/blackBishop.png';
-import BlackQueen from '../Assets/blackQueen.png';
-import BlackKnight from '../Assets/blackKnight.png';
+import ConfettiExplosion from 'react-confetti-explosion';
+
 
 interface Props {
   children?: ReactNode
@@ -41,6 +31,9 @@ export default function ChessBoardComponent(props: Props) {
   const ghostPiece = useRef<HTMLDivElement>(null);
   const [chessGame, setChessGame] = useState<ChessGame>(game);
   const [promotion, setPromotion] = useState(chessGame.getPromotion());
+  const [check, setCheck] = useState(false);
+  const [attacker , setAttacker] = useState<Piece | null>(null);
+  const [positionNumber, setPositionNumber] = useState<number>(0);
 
   const onStartDragging = useCallback((thisPiece: Piece | null, e: React.MouseEvent) => {
     setGrabbedPiece(thisPiece);
@@ -51,14 +44,16 @@ export default function ChessBoardComponent(props: Props) {
   // This is where we drop the piece. Very important function :)
   const onDrop = useCallback((x: number, y: number) => {
     if (!(grabbedPiece)) return;
-    if (chessGame.makeMove(grabbedPiece, [x, y])) {
+    if (positionNumber === chessGame.getPositionHistory().length - 1 && chessGame.makeMove(grabbedPiece, [x, y])) {
       // Call the usecallback hook to update the notation of the game.
       props.getAlgebraicNotation(chessGame.getPGN())
       setChessGame(chessGame);
     }
-   
+    setAttacker(chessGame.getAttacker());
+    setCheck(chessGame.getCheck());
     setGrabbedPiece(null);
     setPromotion(chessGame.getPromotion());
+    setPositionNumber(chessGame.getPositionHistory().length - 1);
     if (chessGame.getPromotion()) promotionSquareX = x;
 
   }, [grabbedPiece, chessGame, setChessGame, setGrabbedPiece]);
@@ -77,8 +72,6 @@ export default function ChessBoardComponent(props: Props) {
   }, [chessGame, setPromotion]);
 
   
-  
-  
   const move = (e: React.MouseEvent) => {
     const extra = grabbedPiece ? 0 : 50
     if (ghostPiece.current){
@@ -87,6 +80,29 @@ export default function ChessBoardComponent(props: Props) {
       ghostPiece.current.style.left = `${e.clientX - extra - ghostPiece.current.clientWidth / 2}px`;
     }
   };
+
+  const loadChessBoard = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    const back = e.key === "ArrowLeft" ? true : false;
+
+    console.log(positionNumber, chessGame.getPositionHistory().length)
+    if (back === true && positionNumber > 0) {
+      const position = chessGame.getPositionHistory()[positionNumber - 1];
+      setPositionNumber(positionNumber - 1);
+      console.log(positionNumber, position)
+      game.setChessBoard(position);
+    }
+    if (back === false && positionNumber < chessGame.getPositionHistory().length - 1) {
+      const position = chessGame.getPositionHistory()[positionNumber + 1];
+      setPositionNumber(positionNumber + 1);
+      console.log(positionNumber, position)
+
+      game.setChessBoard(position);
+    }
+    
+    setChessGame(game);
+
+  }
   
   let piecesToDisplayJSX: JSX.Element[] = []
 
@@ -112,11 +128,14 @@ export default function ChessBoardComponent(props: Props) {
         const xy: Square = [x, y]
         const op = chessGame.getListOfOpponentMarkedSquares()
 
-        op.forEach(move => {
+        /*
+         op.forEach(move => {
           if (move[0] === xy[0] && move[1] === xy[1]) {
             marked = "#5203fc";
           }
         });
+        */
+        
         
         piecesToDisplayJSX.push(
           <Tile
@@ -131,13 +150,23 @@ export default function ChessBoardComponent(props: Props) {
         )
       
       }
-    }
+  }
+
+  
+
+  const confettiStyle: CSSProperties = {
+    position: "absolute",
+    top: attacker ? 100*attacker?.y + + 200 : "0px",
+    left: attacker ? 100*attacker?.x + 830 : "0px",
+    zIndex: 2,
+  } 
+  
+  
 
 
 
   return (
-    <React.Fragment> 
-      <div className="chessboardContainer" onClick={() => revertPromotion()}>
+      <div className="chessboardContainer" tabIndex={0} onKeyDown={e => loadChessBoard(e)} onClick={() => revertPromotion()}>
         <div draggable={false} className="chessboard" onMouseMove={e => move(e)}>
           {piecesToDisplayJSX}
         </div>
@@ -150,6 +179,11 @@ export default function ChessBoardComponent(props: Props) {
             alt="ghostPiece">
           </img>}
         </div>
+        <div>
+          {check && 
+          <ConfettiExplosion style={confettiStyle} force={0.4} duration={2200} particleCount={35} width={400}/>
+          }
+        </div>
         <div> 
           {promotion &&  
             <PawnPromotion whoIsPromoting={chessGame.getPromotionInformation()?.piece.white as boolean}
@@ -159,8 +193,6 @@ export default function ChessBoardComponent(props: Props) {
               ></PawnPromotion>}
         </div>
       </div>
-     
-  </React.Fragment>
   );
 
 }

@@ -37,15 +37,16 @@ export default function Window(bee: Props) {
     setNotation(PGN);
   }, [notation]);
 
+
   return (
       <div className="window" style={appStyle} onMouseDown={e => boo(e)}>
 
-      <button style={resetButtonStyle} className='resetGameButton' onClick={resetGame}>Reset game</button>
-      <ChessBoardComponent getAlgebraicNotation={getAlgebraicNotation}>
+        <button style={resetButtonStyle} className='resetGameButton' onClick={resetGame}>Reset game</button>
+        <ChessBoardComponent getAlgebraicNotation={getAlgebraicNotation}>
 
-      </ChessBoardComponent>
-        <AlgebraicNotationBox notation={notation}></AlgebraicNotationBox>
-          
+        </ChessBoardComponent>
+          <AlgebraicNotationBox notation={notation}></AlgebraicNotationBox>
+            
       </div>
   );
 }

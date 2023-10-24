@@ -85,9 +85,10 @@ export class ChessBoard {
       return this.pieceSymbolToImageURL;
     }
 
-    /*
-    Make chessboard by using FEN notation. Might include PGN later on.
-    */
+    /**
+     * Create board based on a FEN string.
+     * @param fen 
+     */
     createBoard(fen: string): void {
       this.board = Array(8).fill(null).map(() => Array(8).fill(null));
 
@@ -96,19 +97,9 @@ export class ChessBoard {
       // We start with only FEN notation for creating board.
       let x: number = 0
       let y: number = 7
-      let imageURL: string = "Fail"
-      let value: number = 0
       let white: boolean 
-      let hasMoved: boolean
 
-      /*
-      const pieceFromSymbom = new Map<string, string>([
-        ['K', `./Pieces/${white ? "white" : "black"}King.png`]
-      ]);
-      */
-
-
-      for (var i = 0; i < fen.length; i++) {
+      for (let i = 0; i < fen.length; i++) {
         let char = fen.charAt(i)
         if (char === "/" ){
           x = 0
@@ -129,11 +120,9 @@ export class ChessBoard {
             x = 7
           }
 
-          value = this.pieceSymbolToValue.get(char) as number
-          imageURL = this.pieceSymbolToImageURL.get(char)?.get(white) as string
-          
-
-          hasMoved = false
+          const value = this.pieceSymbolToValue.get(char) as number
+          const imageURL = this.pieceSymbolToImageURL.get(char)?.get(white) as string
+          const hasMoved = false
           const piece: Piece = {imageURL: imageURL, x: x, y: y, value: value, white: white, hasMoved: hasMoved, symbol: char, legalMoves: []}
 
           this.board[x][y] = piece 

@@ -14,12 +14,10 @@ export class ChessGame{
     private chessHeight: number;
     private ChessBoard: ChessBoard;
     private chessBoard: Chessboard;
-    private pieces: Piece[]
     private turn: number = 0
     private check: boolean = false
     private checkMate: boolean = false
     private staleMate: boolean = false
-    private moveCount: number = 0 // This is used for the 50 move rule. - When piece is captured counter is reset.
     private threeFoldRepetition: boolean = false
     private winner: boolean | null = null // True means white, false means black.
     private draw: boolean = false
@@ -37,22 +35,27 @@ export class ChessGame{
     private doubleSquarePawnXPosition: number = 0
     private promotion: boolean = false
     private promotionInformation: {piece: Piece, move: Square} | null = null
+    private fiftyMoveRuleCounter: number = 0
+    private positionHistory: string[]
+    private canCastle: Map<boolean, Map<boolean, boolean> >;
+    
 
 
 
     constructor(){
-        this.chessWidth = 8
-        this.chessHeight = 8
-        this.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+        this.chessWidth = 8;
+        this.chessHeight = 8;
+        this.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+        this.positionHistory = [this.fen];
 
+        this.canCastle = new Map<boolean, Map<boolean, boolean> >();
         // Starting position
         this.ChessBoard = new ChessBoard(this.fen);
         this.chessBoard = this.ChessBoard.getBoard();
-        this.pieces = new ChessBoard(this.fen).getPieces();
         this.listOfOpponentMarkedSquares = [];
         this.mapOfOpponentMarkedSquares = new Map<Piece, Square[]>();
-        this.whiteKingPosition = [4, 0] // Starting position for the white king. This will be updated if the king makes a move.
-        this.blackKingPosition = [4, 7]
+        this.whiteKingPosition = [4, 0]; // Starting position for the white king. This will be updated if the king makes a move.
+        this.blackKingPosition = [4, 7];
 
         this.calcLegalMoves();
     }
@@ -60,6 +63,22 @@ export class ChessGame{
 
     getBoard(): Chessboard {
         return this.chessBoard;
+    }
+
+    getCheck(): boolean {
+      return this.check;
+    }
+
+    getDraw(): boolean {
+      return this.draw;
+    }
+
+    getCheckMate(): boolean {
+      return this.checkMate;
+    }
+
+    getAttacker(): Piece | null {
+      return this.kingAttacker;
     }
 
     getPromotion(): boolean {
@@ -78,6 +97,41 @@ export class ChessGame{
       this.promotionInformation = null;
     }
 
+    getPositionHistory(): string[] {
+      return this.positionHistory;
+    }
+
+    getFENFromBoard(): string {
+      let fen = "";
+      for (let y = 7; y >= 0; y--) {
+        let emptySquares = 0;
+        for (let x = 0; x < this.chessWidth; x++) {
+          const piece = this.chessBoard[x][y];
+          if (piece === null) {
+            emptySquares++;
+          }
+          else {
+            if (emptySquares > 0) {
+              fen += emptySquares;
+              emptySquares = 0;
+            }
+            const symbol = piece.white ? piece.symbol : piece.symbol.toLowerCase();
+            fen += symbol;
+          }
+        }
+        if (emptySquares > 0) fen += emptySquares;
+        if (y > 0) fen += "/";
+      }
+
+      return fen;
+    }
+
+    setChessBoard(fen: string): void {
+      this.ChessBoard = new ChessBoard(fen);
+      this.chessBoard = this.ChessBoard.getBoard();
+      this.calcLegalMoves();
+    }
+
     updateKingPosition(piece: Piece): void {
       if (piece.symbol !== "K") return;
       if (piece.white) this.whiteKingPosition = [piece.x, piece.y]
@@ -85,30 +139,29 @@ export class ChessGame{
     }
 
     castleKing(piece: Piece, move: Square): boolean {
-      if (piece.symbol === "K" && piece.hasMoved === false && (move[0] >= 6 || move[0] <= 2) && !this.check) {
-        const row = piece.white ? 0 : 7;
-        const leftSideCastling = move[0] < 4
-        const rook = leftSideCastling ? this.chessBoard[0][row] as Piece : this.chessBoard[7][row] as Piece;
+      if (piece.symbol !== "K" || piece.hasMoved === true || !(move[0] >= 6 || move[0] <= 2) || this.check) return false;
 
-        const newKingPosition = leftSideCastling ? 2 : 6;
-        const newRookPosition = leftSideCastling ? 3 : 5;
+      const row = piece.white ? 0 : 7;
+      const leftSideCastling = move[0] < 4
+      const rook = leftSideCastling ? this.chessBoard[0][row] as Piece : this.chessBoard[7][row] as Piece;
 
-        const newRook: Piece = { ...rook, x: newRookPosition, hasMoved: true };    
-        const newKing: Piece = { ...piece, x: newKingPosition, hasMoved: true };
+      const newKingPosition = leftSideCastling ? 2 : 6;
+      const newRookPosition = leftSideCastling ? 3 : 5;
 
-        this.chessBoard[piece.x][piece.y] = null;
-        this.chessBoard[rook.x][rook.y] = null;
+      const newRook: Piece = { ...rook, x: newRookPosition, hasMoved: true };    
+      const newKing: Piece = { ...piece, x: newKingPosition, hasMoved: true };
 
-        this.chessBoard[newKingPosition][piece.y] = newKing;
-        this.chessBoard[newRookPosition][piece.y] = newRook;
+      this.chessBoard[piece.x][piece.y] = null;
+      this.chessBoard[rook.x][rook.y] = null;
 
-        this.updateKingPosition(newKing);
-        this.addNotation(move, piece, false, !leftSideCastling);
+      this.chessBoard[newKingPosition][piece.y] = newKing;
+      this.chessBoard[newRookPosition][piece.y] = newRook;
 
+      this.updateKingPosition(newKing);
+      this.addNotation(move, piece, false, !leftSideCastling);
 
-        return true;
-      }
-      return false;
+      return true;
+      
     }
 
     enPassant(piece: Piece, move: Square): boolean {
@@ -165,13 +218,11 @@ export class ChessGame{
 
       this.turn++;
 
-
       const enPassant = this.enPassant(piece, move);
       const castling = this.castleKing(piece, move);
 
-
+      const capture: boolean = this.chessBoard[move[0]][move[1]] !== null;
       if (!castling && !enPassant && !this.promotion){
-        const capture: boolean = this.chessBoard[move[0]][move[1]] !== null;
 
         const newPiece: Piece = { ...piece, x: move[0], y: move[1], hasMoved: true };    
         this.chessBoard[piece.x][piece.y] = null; 
@@ -195,7 +246,15 @@ export class ChessGame{
       this.promotionInformation = null;
       this.calcLegalMoves();
 
+      this.fiftyMoveRuleCounterIncrement(piece, capture);
+      this.positionHistory.push(this.getFENFromBoard());
+
       return true;
+    }
+
+    fiftyMoveRuleCounterIncrement(piece: Piece, capture: boolean): void {
+      if (piece.symbol === "P" || capture) this.fiftyMoveRuleCounter = 0;
+      else this.fiftyMoveRuleCounter++;
     }
 
     getPGN(): string {
@@ -479,11 +538,13 @@ export class ChessGame{
       const kingPosition = this.whoseTurn() ? this.whiteKingPosition : this.blackKingPosition
 
       this.mapOfOpponentMarkedSquares.forEach((moveList, piece) => {
-        if (moveList.some(move => move[0] === kingPosition[0] && move[1] === kingPosition[1])) {
-          this.check = true;
-          if (this.kingAttacker !== null) this.doubleCheck = true;
-          this.kingAttacker = piece 
-        }
+        moveList.forEach(move => {
+          if (move[0] === kingPosition[0] && move[1] === kingPosition[1]) {
+            this.check = true;
+            if (this.kingAttacker !== null) this.doubleCheck = true;
+            this.kingAttacker = piece
+          }
+        }) 
       })
     }
 
@@ -552,6 +613,12 @@ export class ChessGame{
     }
 
     doubleCheckFilterKingMoves(king: Piece): void {
+      // When the king is in double check, no other piece can move. The king may only move out of the way.
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        if (piece.symbol === "K") return;
+        piece.legalMoves = [];
+      })
+
       king.legalMoves = king.legalMoves.filter(kingMove => {
         return !this.listOfOpponentMarkedSquares.some(square => kingMove[0] === square[0] && kingMove[1] === square[1])   
       })
@@ -677,6 +744,65 @@ export class ChessGame{
         }
     }
 
+    checkIfInsuffientMaterial(): void {
+      if (this.draw) return;
+
+      // Check for insufficient material.
+      let whiteOverallMaterial = 0;
+      let blackOverallMaterial = 0;
+
+
+      let existPawn = false;
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        if (piece.symbol === "K" || !piece.value) return;
+
+        piece.white ? whiteOverallMaterial += piece.value : blackOverallMaterial += piece.value;
+        if (piece.symbol === "P") existPawn = true;
+
+        if (whiteOverallMaterial > 3 && blackOverallMaterial > 3) return;
+      })
+
+      if ((whiteOverallMaterial > 3 && blackOverallMaterial > 3) || existPawn) return;
+
+      this.draw = true;
+    }
+
+    checkIf50MoveRule(): void {
+      if (this.draw) return;
+
+      if (this.fiftyMoveRuleCounter >= 50) this.draw = true;
+
+    }
+
+
+    checkForCheckMateOrDraw(): void {
+      let hasLegalMoves: boolean = false;
+
+      this.getListOfPiecesFromBoard().forEach(piece => {
+        if (piece.legalMoves.length > 0 && piece.white === this.whoseTurn()) {
+          hasLegalMoves = true;
+        }
+      })  
+      if (hasLegalMoves) return;
+
+      if (hasLegalMoves === false && this.check) {
+        this.checkMate = true;
+        this.winner = !this.whoseTurn();
+        console.log("Checkmate")
+      }
+      if (hasLegalMoves === false && !this.check) {
+        this.draw = true;
+        console.log("Stalemate")
+      }
+
+      this.checkIfInsuffientMaterial();
+      this.checkIf50MoveRule();
+
+
+    }
+
+    
+
   
     /**
      * Calculates the legal moves for each piece in the chessboard. This effectts the legalMoves array in each piece.
@@ -696,15 +822,18 @@ export class ChessGame{
       this.calcPseudoLegalMoves();
 
       this.filterOutOfBoundsMoves();
-
+      this.markOpponentSquares(); // We do this before filtering moves where the piece would capture its own pieces. This is important.
       this.filterCaptureOwnPiecesMoves();
-      this.markOpponentSquares();
+
       this.checkIfPlayerIsInCheck(); // Fix this position.
       this.filterKingMovesBasedOnOpponentMarkedSquares(king)
       this.filterPieceMovesIfInCheck(king);
       this.filterPinnedPiecesMoves();
 
       this.addCasltingMoves(king);
+
+      this.checkForCheckMateOrDraw();
+
 
     }
 

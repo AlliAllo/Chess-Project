@@ -1,4 +1,6 @@
 import './CSS/NotationBox.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCopy } from '@fortawesome/free-solid-svg-icons'
 
 interface NotationProps {
     children?: JSX.Element;
@@ -9,12 +11,9 @@ interface NotationProps {
 function copyToClipboard(str: string | undefined) {
     if (!str) return;
     
-    const el = document.createElement('textarea');
-    el.value = str;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
+    navigator.clipboard.writeText(str);
+
+
   }
 
 export default function AlgebraicNotationBox(props: NotationProps) {
@@ -25,7 +24,9 @@ export default function AlgebraicNotationBox(props: NotationProps) {
   return (
     <div className="algebraic-notation-box">
       {props.notation }
-      <button className="copyButton" onClick={handleCopy}>Copy to Clipboard</button>
+
+      <FontAwesomeIcon size={"xl"} className='copyButton'  onClick={handleCopy} icon={faCopy} />
+
 
     </div>
   );

@@ -11,16 +11,22 @@
     background-color: rgb(39 37 34);
     border: 1px solid #ddd;
     margin-left: 30px;
-    user-select: none;
 }
 
 .copyButton {
     position: absolute;
     left: 50%;
-    top: 95%;
+    top: 93%;
     transform: translateX(-50%);
     margin-top: 10px;
     margin-bottom: 10px;
     user-select: none;
-
 }
+
+.copyButton:hover {
+    cursor: pointer;
+}
+
+.copyButton:active { 
+    transform: scale(0.9); 
+} 
