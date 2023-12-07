@@ -1,6 +1,12 @@
 .chessPiece {
     user-select: none;
 }
+
+.chessPieceIMG {
+    width: 100%;
+    height: 100%;
+}
+
 .chessPiece:hover {
     cursor: grab;
 }

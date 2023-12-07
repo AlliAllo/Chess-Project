@@ -5,12 +5,15 @@
   
 .algebraic-notation-box {
     position: relative;
-    width: 400px;
-    height: 800px;
+    width: 100%;
+    height: 100%;
     color: hsl(60deg 45.16% 87.84%);
     background-color: rgb(39 37 34);
     border: 1px solid #ddd;
-    margin-left: 30px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 .copyButton {

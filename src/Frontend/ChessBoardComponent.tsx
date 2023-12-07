@@ -1,11 +1,10 @@
-import React, { ReactNode, useRef, useCallback, useState, useMemo, useEffect, CSSProperties  } from 'react';
+import React, { ReactNode, useRef, useCallback, useState, CSSProperties  } from 'react';
 import Tile from './TileComponent';
 import PawnPromotion from './PawnPromotionComponent';
 
 import { Piece } from '../Classes/ChessBoard';
-import { Square } from '../Classes/ChessGame';
+// import { Square } from '../Classes/ChessGame';
 
-import { pieceStyle } from "./ChessPieceComponent"
 import './CSS/ChessBoard.css';
 import { ChessGame } from '../Classes/ChessGame';
 
@@ -16,6 +15,7 @@ interface Props {
   children?: ReactNode
   
   getAlgebraicNotation: (PGN: string) => void
+  // onKeyPress: (e: React.KeyboardEvent) => void
 }
 
 
@@ -34,6 +34,12 @@ export default function ChessBoardComponent(props: Props) {
   const [check, setCheck] = useState(false);
   const [attacker , setAttacker] = useState<Piece | null>(null);
   const [positionNumber, setPositionNumber] = useState<number>(0);
+
+  // const onDrop = useCallback((e: React.KeyboardEvent) => {
+  //   loadChessBoard(e);
+  // }, []);
+  
+
 
   const onStartDragging = useCallback((thisPiece: Piece | null, e: React.MouseEvent) => {
     setGrabbedPiece(thisPiece);
@@ -56,7 +62,7 @@ export default function ChessBoardComponent(props: Props) {
     setPositionNumber(chessGame.getPositionHistory().length - 1);
     if (chessGame.getPromotion()) promotionSquareX = x;
 
-  }, [grabbedPiece, chessGame, setChessGame, setGrabbedPiece]);
+  }, [grabbedPiece, positionNumber, chessGame, props]);
 
   const onPromotionSelect = useCallback((promotionType: string) => {
     chessGame.makePawnPromotion(promotionType);
@@ -71,38 +77,35 @@ export default function ChessBoardComponent(props: Props) {
 
   }, [chessGame, setPromotion]);
 
-  
+  const tileElements = document.getElementsByClassName("tile");
   const move = (e: React.MouseEvent) => {
-    const extra = grabbedPiece ? 0 : 50
     if (ghostPiece.current){
-      ghostPiece.current.style.position = "fixed";
-      ghostPiece.current.style.top = `${e.clientY - extra - ghostPiece.current.clientHeight / 2}px`; 
-      ghostPiece.current.style.left = `${e.clientX - extra - ghostPiece.current.clientWidth / 2}px`;
+      ghostPiece.current.style.top = `${e.clientY  - ghostPiece.current.clientHeight / 2}px`; 
+      ghostPiece.current.style.left = `${e.clientX  - ghostPiece.current.clientWidth / 2}px`;
     }
   };
 
-  const loadChessBoard = (e: React.KeyboardEvent) => {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-    const back = e.key === "ArrowLeft" ? true : false;
+  // const loadChessBoard = (e: React.KeyboardEvent) => {
+  //   if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  //   const back = e.key === "ArrowLeft" ? true : false;
 
-    console.log(positionNumber, chessGame.getPositionHistory().length)
-    if (back === true && positionNumber > 0) {
-      const position = chessGame.getPositionHistory()[positionNumber - 1];
-      setPositionNumber(positionNumber - 1);
-      console.log(positionNumber, position)
-      game.setChessBoard(position);
-    }
-    if (back === false && positionNumber < chessGame.getPositionHistory().length - 1) {
-      const position = chessGame.getPositionHistory()[positionNumber + 1];
-      setPositionNumber(positionNumber + 1);
-      console.log(positionNumber, position)
+  //   console.log(positionNumber, chessGame.getPositionHistory().length)
+  //   if (back === true && positionNumber > 0) {
+  //     const position = chessGame.getPositionHistory()[positionNumber - 1];
+  //     setPositionNumber(positionNumber - 1);
+  //     console.log(positionNumber, position)
+  //     game.setChessBoard(position);
+  //   }
+  //   if (back === false && positionNumber < chessGame.getPositionHistory().length - 1) {
+  //     const position = chessGame.getPositionHistory()[positionNumber + 1];
+  //     setPositionNumber(positionNumber + 1);
+  //     console.log(positionNumber, position)
 
-      game.setChessBoard(position);
-    }
+  //     game.setChessBoard(position);
+  //   }
     
-    setChessGame(game);
-
-  }
+  //   setChessGame(game);
+  // }
   
   let piecesToDisplayJSX: JSX.Element[] = []
 
@@ -112,8 +115,8 @@ export default function ChessBoardComponent(props: Props) {
 
         const isWhite: boolean = (x + y) % 2 === 0 ? false : true
 
-        const white = chessGame.getPromotionInformation()?.piece.white as boolean;
-        const row = white ? 0 : 7;
+        // const white = chessGame.getPromotionInformation()?.piece.white as boolean;
+        // const row = white ? 0 : 7;
 
         if (chessGame.getPromotionInformation()?.piece.x === piece?.x && chessGame.getPromotionInformation()?.piece.y === piece?.y) {
           piece = null;
@@ -125,8 +128,6 @@ export default function ChessBoardComponent(props: Props) {
         }
 
         let marked = undefined
-        const xy: Square = [x, y]
-        const op = chessGame.getListOfOpponentMarkedSquares()
 
         /*
          op.forEach(move => {
@@ -160,20 +161,25 @@ export default function ChessBoardComponent(props: Props) {
     left: attacker ? 100*attacker?.x + 830 : "0px",
     zIndex: 2,
   } 
-  
-  
+
+  const ghostPieceStyle: CSSProperties = {
+    position: "fixed",
+    width: `${tileElements[0].clientWidth}px`,
+    height: `${tileElements[0].clientHeight}px`,
+  } 
+
 
 
 
   return (
-      <div className="chessboardContainer" tabIndex={0} onKeyDown={e => loadChessBoard(e)} onClick={() => revertPromotion()}>
+      <React.Fragment>
         <div draggable={false} className="chessboard" onMouseMove={e => move(e)}>
           {piecesToDisplayJSX}
         </div>
-        <div ref={ghostPiece} className="ghostPiece">
+        <div ref={ghostPiece} className="ghostPiece" style={ghostPieceStyle}>
           {grabbedPiece && grabbedPiece.imageURL && 
           <img  
-            style={pieceStyle} 
+            className='ghostPieceIMG'
             draggable={false} 
             src={grabbedPiece.imageURL} 
             alt="ghostPiece">
@@ -192,7 +198,8 @@ export default function ChessBoardComponent(props: Props) {
               onRevert={() => revertPromotion()}
               ></PawnPromotion>}
         </div>
-      </div>
+      </React.Fragment>
+       
   );
 
 }

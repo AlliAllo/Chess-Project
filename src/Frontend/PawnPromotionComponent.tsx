@@ -50,7 +50,7 @@ export default function PawnPromotion(props: PromotionOptionsProps) {
   const piecesToDisplayJSX: JSX.Element[] = [];
 
   for (let i = 0; i < 4; i++) {
-    const inverted = props.whoIsPromoting ? 0 : -1;
+    //const inverted = props.whoIsPromoting ? 0 : -1;
     const symbolList = ["Q", "R", "B", "N"];
     if (!props.whoIsPromoting) symbolList.reverse(); // If black is promoting we are reversing the order of the pieces.
     const symbol = symbolList[i];

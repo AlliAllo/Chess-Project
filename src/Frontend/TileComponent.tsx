@@ -2,7 +2,6 @@ import React, { ReactNode, CSSProperties, useState } from 'react';
 import { Piece } from '../Classes/ChessBoard';
 import './CSS/Tile.css';
 import ChessPiece from "./ChessPieceComponent"
-import { Square } from '../Classes/ChessGame';
 
 interface TileProps {
   piece: Piece | null
@@ -31,23 +30,11 @@ export default function Tile(props: TileProps) {
       props.onDrop(props.x, props.y) 
     }
   };
-
-  const legalTileStyle: CSSProperties = props.legalTile ? { position: "relative",
-  width: "33px",
-  height: "33px",
-  objectFit: "contain",
-  backgroundColor: 'gray' 
-  } : {};
   
-
   const tileColor = props.color ? props.color : props.tileIsWhite ? 'hsl(90deg 27.12% 46.27%)' : 'hsl(60deg 45.16% 87.84%)'
   
   const tileStyle: CSSProperties = {
-    width: '100px',
-    height: '100px',
     backgroundColor: highlightColor ? highlightColor : tileColor,
-    display: "grid",
-    position: "relative",
   };
 
   function highlightTile(e: React.MouseEvent) {
@@ -81,9 +68,6 @@ export default function Tile(props: TileProps) {
   const xNotation = ["a", "b", "c", "d", "e", "f", "g", "h"]
   
   const NotationStyle: CSSProperties = {
-    position: "absolute",
-    userSelect: "none",
-    fontSize: "18px",
     color: props.tileIsWhite ? 'hsl(60deg 45.16% 87.84%)' : 'hsl(90deg 27.12% 46.27%)',
     
   }
@@ -95,7 +79,7 @@ export default function Tile(props: TileProps) {
     //onMouseDown={selectedTile}
     onContextMenu={e => highlightTile(e)}>
         {props.piece  && <ChessPiece piece={props.piece}  onStartDragging={props.onStartDragging} onPromotionClick={props.onPromotionClick}/>}
-        {props.legalTile && <div className="legalTile centered" style={legalTileStyle}></div>}
+        {props.legalTile && <div className="legalTile"></div>}
         {props.y === 0 && <div style={NotationStyle} className="xNotation">{xNotation[props.x]}</div>}
         {props.x === 0 && <div style={NotationStyle} className="yNotation">{props.y+1}</div>}
 
