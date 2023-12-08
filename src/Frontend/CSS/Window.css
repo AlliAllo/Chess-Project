@@ -8,14 +8,22 @@
   font-size: 21px
 }
 
-.resetGameButton{
+.resetGameButton {
   position: absolute;
   background-color: rgb(49 46 43);
   color: white;
   font-size: 21px;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 10px;
   cursor: pointer;
+  user-select: none;
+  border: 1px solid white;
+  transition: 0.2s;
+
+}
+
+.resetGameButton:active {
+  transform: scale(0.9);
 }
 
 .window {
@@ -26,11 +34,10 @@
   'menu . .'
   'menu main notation'
   'menu . .'; 
-
-  grid-template-rows: auto 0.6fr auto;
-  grid-template-columns: 175px 0.6fr 300px;
+  
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 150px 1fr 250px;
   gap: 2em;
-
 
   background-color: rgb(49 46 43);
 
@@ -52,13 +59,17 @@
 .chessBoard {
   grid-area: main; 
   aspect-ratio: 1/1;
+  min-width: 300px;
+  min-height: 300px;
+  
+  margin-top: 50px;
 
   user-select: none;
 }
 
 .notationBox {
   grid-area: notation;
- 
+  height: 0.6fr;
 }
 
 .chessPiece:hover {

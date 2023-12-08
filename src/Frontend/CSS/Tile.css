@@ -46,7 +46,7 @@
 .xNotation{
     position: absolute;
     user-select: none;
-    font-size: 80%;
+    font-size: 1em;
     
     top: 75%;
     left: 88%;
@@ -55,7 +55,7 @@
 .yNotation {
     position: absolute;
     user-select: none;
-    font-size: 80%;
+    font-size: 1em;
     bottom: 75%;
     right: 88%;
 }

@@ -164,8 +164,8 @@ export default function ChessBoardComponent(props: Props) {
 
   const ghostPieceStyle: CSSProperties = {
     position: "fixed",
-    width: `${tileElements[0].clientWidth}px`,
-    height: `${tileElements[0].clientHeight}px`,
+    width: `${tileElements ? tileElements[0]?.clientWidth : 0}px`,
+    height: `${tileElements ? tileElements[0]?.clientHeight : 0}px`,
   } 
 
 

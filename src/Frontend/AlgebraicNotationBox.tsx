@@ -12,8 +12,6 @@ function copyToClipboard(str: string | undefined) {
     if (!str) return;
     
     navigator.clipboard.writeText(str);
-
-
   }
 
 export default function AlgebraicNotationBox(props: NotationProps) {
