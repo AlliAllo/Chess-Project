@@ -10,10 +10,11 @@
     color: hsl(60deg 45.16% 87.84%);
     background-color: rgb(39 37 34);
     border: 1px solid #ddd;
-    overflow-y: scroll;
-    overflow-x: hidden;
+    overflow: auto; 
+    scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    
 }
 
 .copyButton {

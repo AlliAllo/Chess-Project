@@ -1,6 +1,5 @@
 import { ChessBoard } from "./ChessBoard"
 import { Piece } from "./ChessBoard";
-import { useCallback } from "react";
 
 /*
 Here we create the ChessGame. 
@@ -28,27 +27,23 @@ export class ChessGame{
     private whiteKingPosition: Square // Position of the white king.
     private blackKingPosition: Square 
     private absolutePinnedPieces: Piece[] = [] // This will be a list of pieces that are pinned.
-    private depth: number = 3 // How many moves to look ahead.
     private doubleCheck: boolean = false
     private kingAttacker: Piece | null = null // This will be used to store the piece that is attacking the king.
     private doubleSquarePawnMove: boolean = false // This will be used to check if a pawn has moved 2 squares. This is used for en passant.  
     private doubleSquarePawnXPosition: number = 0
     private promotion: boolean = false
     private promotionInformation: {piece: Piece, move: Square} | null = null
-    private fiftyMoveRuleCounter: number = 0
+    private fiftyMoveRuleCounter: number = 0 // This is used for the fifty move rule. This will be incremented every move. It will reset to 0, when a pawn moves or a piece is captured.
     private positionHistory: string[]
-    private canCastle: Map<boolean, Map<boolean, boolean> >;
-    
-
-
+    private canCastle: string; // 1111 = all can castle, 1000, white can caslte queenside, etc.
 
     constructor(){
         this.chessWidth = 8;
         this.chessHeight = 8;
-        this.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+        this.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         this.positionHistory = [this.fen];
 
-        this.canCastle = new Map<boolean, Map<boolean, boolean> >();
+        this.canCastle = "KQkq";
         // Starting position
         this.ChessBoard = new ChessBoard(this.fen);
         this.chessBoard = this.ChessBoard.getBoard();
@@ -123,6 +118,23 @@ export class ChessGame{
         if (y > 0) fen += "/";
       }
 
+      // Turn
+      fen += this.whoseTurn() ? " w " : " b ";
+
+      // Castling
+      fen += this.canCastle + " ";
+
+      // En passant
+      const row = this.whoseTurn() ? 6 : 3;
+      const targetSquare = this.doubleSquarePawnMove ? String.fromCharCode('a'.charCodeAt(0) + this.doubleSquarePawnXPosition) + row : "-";
+      fen += targetSquare + " ";
+
+      // Fifty move rule
+      fen += this.fiftyMoveRuleCounter + " ";
+
+      // Move number
+      fen += Math.ceil((this.turn+1)/2);
+
       return fen;
     }
 
@@ -138,8 +150,37 @@ export class ChessGame{
       else this.blackKingPosition = [piece.x, piece.y]
     }
 
+    updateCanCastle(piece: Piece): void {
+      if (piece.symbol.toLowerCase() !== "r" || piece.symbol.toLowerCase() !== "k") return;
+      
+      if (piece.symbol.toLowerCase() === "k" && piece.white) {
+        this.canCastle = this.canCastle.replace("K", "");
+        this.canCastle = this.canCastle.replace("Q", "");
+      }
+
+      if (piece.symbol.toLowerCase() === "k" && !piece.white) {
+        this.canCastle = this.canCastle.replace("k", "");
+        this.canCastle = this.canCastle.replace("q", "");
+      }
+
+
+      if (piece.symbol.toLowerCase() === "r" && piece.white) {
+        if (piece.x === 0) this.canCastle = this.canCastle.replace("Q", "");
+        if (piece.x === 7) this.canCastle = this.canCastle.replace("K", "");
+      }
+
+      if (piece.symbol.toLowerCase() === "r" && !piece.white) {
+        if (piece.x === 0) this.canCastle = this.canCastle.replace("q", "");
+        if (piece.x === 7) this.canCastle = this.canCastle.replace("k", "");
+      }
+
+      if (this.canCastle === "") this.canCastle = "-";
+       
+    }
+
     castleKing(piece: Piece, move: Square): boolean {
       if (piece.symbol !== "K" || piece.hasMoved === true || !(move[0] >= 6 || move[0] <= 2) || this.check) return false;
+      this.turn++;
 
       const row = piece.white ? 0 : 7;
       const leftSideCastling = move[0] < 4
@@ -207,6 +248,7 @@ export class ChessGame{
 
     makeMove(piece: Piece, move: Square): boolean {
       if (piece.white !== this.whoseTurn()) return false;
+      if (this.checkMate || this.staleMate) return false;
       if (!piece.legalMoves.some(a => a[0] === move[0] && a[1] === move[1])) return false;
       if (piece.x === move[0] && piece.y === move[1]) return false;
       if (piece.symbol === "P" && (move[1] === 0 || move[1] === 7) && !this.promotion) { // Pawn promotion
@@ -238,6 +280,7 @@ export class ChessGame{
       }
 
       piece.hasMoved = true;
+      this.updateCanCastle(piece);
       this.check = false;
       this.doubleCheck = false;
       this.doubleSquarePawnMove = false;
@@ -308,7 +351,6 @@ export class ChessGame{
       const directionalCheck = (direction: [number, number] ) => {
         let possiblePinnedPiece: Piece | null = null
         const symbol = direction[0] === 0 || direction[1] === 0 ? "R" : "B"
-        const indexingCondition = null
         for (let i = 1; i <= 7; i++) { // Loop until we hit the edge of the board.
           if (0 >= king.x + i * direction[0] || 8 <= king.x + i * direction[0]
             || 0 >= king.y + i * direction[1] || 8 <= king.y + i * direction[1]
@@ -809,7 +851,7 @@ export class ChessGame{
      */
     calcLegalMoves(): void{
       this.listOfOpponentMarkedSquares = [];
-      this.mapOfOpponentMarkedSquares = new Map<Piece, Square[]>;
+      this.mapOfOpponentMarkedSquares = new Map<Piece, Square[]>();
       this.absolutePinnedPieces = [];
       this.kingAttacker = null;
 

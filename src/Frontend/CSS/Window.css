@@ -2,7 +2,10 @@
 .chessBoard { grid-area: main; }
 .notationBox { grid-area: notation; }
 .menuBar { grid-area: menu; }
-
+.leftBar { grid-area: emptySpaceBarLeft; }
+.rightBar { grid-area: emptySpaceBarRight; }
+.topInfoBar { grid-area: tInfoBar; }
+.bottomInfoBar { grid-area: bInfoBar; }
 
 .notationSymbols {
   font-size: 21px
@@ -10,6 +13,7 @@
 
 .resetGameButton {
   position: absolute;
+  width: 140px;
   background-color: rgb(49 46 43);
   color: white;
   font-size: 21px;
@@ -19,6 +23,8 @@
   user-select: none;
   border: 1px solid white;
   transition: 0.2s;
+  margin-left: 50% ;
+  margin-right: 50%;
 
 }
 
@@ -31,13 +37,13 @@
   width: 100vw;
   height: 100vh;
   grid-template-areas:
-  'menu . .'
-  'menu main notation'
-  'menu . .'; 
+  'menu emptySpaceBarLeft tInfoBar . emptySpaceBarRight'
+  'menu emptySpaceBarLeft main notation emptySpaceBarRight'
+  'menu emptySpaceBarLeft bInfoBar . emptySpaceBarRight'; 
   
-  grid-template-rows: auto 1fr auto;
-  grid-template-columns: 150px 1fr 250px;
-  gap: 2em;
+  grid-template-rows: 45px 1fr minmax(1fr, 1fr);
+  grid-template-columns: 150px 0.25fr min(90vw, 90vh) 350px 0.25fr;
+  
 
   background-color: rgb(49 46 43);
 
@@ -49,27 +55,87 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background-color: #262422;
+  color: white;
+  font-size: 1.4rem;
+
+}
+
+
+.playButton {
+  position: absolute;
   background-color: rgb(49 46 43);
   color: white;
-  font-size: 21px;
+  font-size: 1.5rem;
+  border-radius: 10px;
   cursor: pointer;
   user-select: none;
+  border: 1px solid white;
+  transition: 0.2s;
 }
+
+.topInfoBar {
+  grid-area: tInfoBar;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  color: white;
+  margin-top: 5vh;
+}
+
+.bottomInfoBar {
+  grid-area: bInfoBar;
+  display: flex;
+  align-items: center;
+  color: white;
+}
+
+.enemyAvatar {
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  
+  margin-left: calc(2em);
+  margin-top: 0.8em;
+
+  background-color: transparent;
+}
+
+.enemyName {
+  position: absolute;
+  margin-left: calc(2em + 55px);
+  font-weight: bold;
+}
+
+.youAvatar {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  
+  background-color: transparent;
+}
+
 
 .chessBoard {
   grid-area: main; 
   aspect-ratio: 1/1;
-  min-width: 300px;
-  min-height: 300px;
-  
-  margin-top: 50px;
+  min-width: 400px;
+  min-height: 400px;
+  max-width: 90vh;
+  max-height: 90vh;
 
+  margin-left: 2em;
+  margin-right: 2em;
+  margin-top: 1em;
+  
   user-select: none;
 }
 
+
 .notationBox {
   grid-area: notation;
-  height: 0.6fr;
+
 }
 
 .chessPiece:hover {

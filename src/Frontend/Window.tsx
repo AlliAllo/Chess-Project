@@ -1,7 +1,10 @@
 import './CSS/Window.css';
-import { CSSProperties, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import ChessBoardComponent from './ChessBoardComponent';
 import AlgebraicNotationBox from './AlgebraicNotationBox';
+import Menu from './MenuComponent';
+import computerIcon from '../Assets/desktop.png';
+import chessAvatar from '../Assets/userAvatar.svg';
 
 interface Props {
   children?: JSX.Element;
@@ -19,13 +22,6 @@ export default function Window(bee: Props) {
     window.location.reload();
   }
 
-  const [windowWidth, windowHeight] = [window.innerWidth, window.innerHeight];
-
-  const resetButtonStyle: CSSProperties = {
-    top: windowHeight/100,
-    left: windowWidth/2-100,
-  }
-
   const [notation, setNotation] = useState<string | undefined>(undefined);
 
   const getAlgebraicNotation = useCallback((PGN: string) => {
@@ -36,14 +32,31 @@ export default function Window(bee: Props) {
   return (
       <div className="window" onMouseDown={e => boo(e)}>
 
-        <button style={resetButtonStyle} className='resetGameButton' onClick={resetGame}>Reset game</button>
 
-        <div className='menuBar'>Menubar</div>
+        <div className='menuBar'>
+          <Menu ></Menu>
+        </div>
+
+        <div className='topInfoBar'> 
+          <button className='resetGameButton' onClick={resetGame}>Reset game</button>
+          <img src={computerIcon} alt="Computer Icon" className='enemyAvatar' />
+          <span className='enemyName'>Computer</span>
+        </div>
+
+        <div className='buttomInfoBar'>
+          <img src={chessAvatar} alt="Computer Icon" className='youAvatar' />
+        </div>
+        
+
+        <div className='emptySpaceBarLeft'></div>
+        <div className='emptySpaceBarRight'></div>
 
         <div className='chessBoard'>
           <ChessBoardComponent getAlgebraicNotation={getAlgebraicNotation}>
           </ChessBoardComponent>
         </div>
+
+        
 
         <div className='notationBox'>
           <AlgebraicNotationBox notation={notation}></AlgebraicNotationBox>

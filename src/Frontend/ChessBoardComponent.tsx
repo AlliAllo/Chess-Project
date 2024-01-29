@@ -1,6 +1,7 @@
-import React, { ReactNode, useRef, useCallback, useState, CSSProperties  } from 'react';
+import React, { ReactNode, useRef, useCallback, useState, CSSProperties, useEffect } from 'react';
 import Tile from './TileComponent';
 import PawnPromotion from './PawnPromotionComponent';
+
 
 import { Piece } from '../Classes/ChessBoard';
 // import { Square } from '../Classes/ChessGame';
@@ -9,6 +10,7 @@ import './CSS/ChessBoard.css';
 import { ChessGame } from '../Classes/ChessGame';
 
 import ConfettiExplosion from 'react-confetti-explosion';
+
 
 
 interface Props {
@@ -24,33 +26,64 @@ interface Props {
 const game = new ChessGame();
 let promotionSquareX = 1000;
 
+function stockfishMoveToXY(move: string): [number, number] {
+  const x: number = move[0].charCodeAt(0) - 97;
+  const y = parseInt(move[1], 10) - 1; // Adjust to 0-based index
+  return [x, y];
+}
+
 
 export default function ChessBoardComponent(props: Props) {
+  const ghostPiece = useRef<HTMLDivElement>(null);
 
   const [grabbedPiece, setGrabbedPiece] = useState<Piece | null>(null);
-  const ghostPiece = useRef<HTMLDivElement>(null);
   const [chessGame, setChessGame] = useState<ChessGame>(game);
   const [promotion, setPromotion] = useState(chessGame.getPromotion());
   const [check, setCheck] = useState(false);
   const [attacker , setAttacker] = useState<Piece | null>(null);
   const [positionNumber, setPositionNumber] = useState<number>(0);
+  const [playerColor, setPlayerColor] = useState<boolean>(true); // true = white, false = black
+  const [playerTurn, setPlayerTurn] = useState<boolean>(chessGame.whoseTurn()); // true = white, false = black
 
+  console.log(playerTurn)
+
+  const currentFen = chessGame.getPositionHistory()[chessGame.getPositionHistory().length - 1];
   // const onDrop = useCallback((e: React.KeyboardEvent) => {
   //   loadChessBoard(e);
   // }, []);
   
+  useEffect(() => {
+    props.getAlgebraicNotation(chessGame.getPGN());
+  }, [chessGame, props]);
+  
+  const fetchMoveFromBackend = async (fen: string, depth: number) => {
+    try {
+      const response = await fetch('http://localhost:3001/getMove', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fen, depth }),
+      });
+  
+      const data = await response.json();
+      const move = data.move;
+      return await move;
+    } catch (error) {
+      console.error('Error fetching move from backend:', error);
+    }
+  };
 
 
   const onStartDragging = useCallback((thisPiece: Piece | null, e: React.MouseEvent) => {
     setGrabbedPiece(thisPiece);
-    move(e)
+    move(e);
       }, [setGrabbedPiece]);
-
 
   // This is where we drop the piece. Very important function :)
   const onDrop = useCallback((x: number, y: number) => {
     if (!(grabbedPiece)) return;
-    if (positionNumber === chessGame.getPositionHistory().length - 1 && chessGame.makeMove(grabbedPiece, [x, y])) {
+    if (positionNumber === chessGame.getPositionHistory().length - 1 && playerColor === game.whoseTurn()  && chessGame.makeMove(grabbedPiece, [x, y])) {
       // Call the usecallback hook to update the notation of the game.
       props.getAlgebraicNotation(chessGame.getPGN())
       setChessGame(chessGame);
@@ -62,7 +95,7 @@ export default function ChessBoardComponent(props: Props) {
     setPositionNumber(chessGame.getPositionHistory().length - 1);
     if (chessGame.getPromotion()) promotionSquareX = x;
 
-  }, [grabbedPiece, positionNumber, chessGame, props]);
+  }, [grabbedPiece, positionNumber, chessGame, playerColor, props]);
 
   const onPromotionSelect = useCallback((promotionType: string) => {
     chessGame.makePawnPromotion(promotionType);
@@ -74,16 +107,52 @@ export default function ChessBoardComponent(props: Props) {
     chessGame.setPromotionInformationNull();
     chessGame.setPromotion(false);
     setPromotion(chessGame.getPromotion());
-
   }, [chessGame, setPromotion]);
 
-  const tileElements = document.getElementsByClassName("tile");
   const move = (e: React.MouseEvent) => {
     if (ghostPiece.current){
       ghostPiece.current.style.top = `${e.clientY  - ghostPiece.current.clientHeight / 2}px`; 
-      ghostPiece.current.style.left = `${e.clientX  - ghostPiece.current.clientWidth / 2}px`;
+      ghostPiece.current.style.left = `${e.clientX - ghostPiece.current.clientWidth / 2}px`;
     }
   };
+
+  // Check the condition after the move is fetched and computerMove is updated
+  if (playerColor !== chessGame.whoseTurn()) {
+    fetchMoveFromBackend(currentFen, 10).then(
+      function(move) {  
+        if (playerColor === chessGame.whoseTurn()) return
+        if (move === null || move === undefined) {
+          alert("error in fetching move");
+          return;
+        }
+        
+        const position = stockfishMoveToXY(move[0] + move[1]);
+        const destination = stockfishMoveToXY(move[2] + move[3]);
+        console.log(position, destination);
+        console.log(chessGame.whoseTurn(), playerColor);
+        
+        const piece = chessGame.getBoard()[position[0]][position[1]] as Piece;
+        if (piece === null) return;
+
+        if (piece.symbol === "K" && Math.abs(position[0] - destination[0]) <= 2) {
+          console.log("caslting")
+          console.log(chessGame.castleKing(piece, destination))
+        } else {
+          console.log(chessGame.makeMove(piece, destination));
+        }
+        setPlayerTurn(chessGame.whoseTurn());
+        setChessGame(chessGame);
+        setAttacker(chessGame.getAttacker());
+        setCheck(chessGame.getCheck());
+        setPositionNumber(chessGame.getPositionHistory().length - 1);
+        setPromotion(chessGame.getPromotion());
+        props.getAlgebraicNotation(chessGame.getPGN());
+
+      },
+      function(error) { console.log(error); }
+    )
+  }
+
 
   // const loadChessBoard = (e: React.KeyboardEvent) => {
   //   if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -147,6 +216,7 @@ export default function ChessBoardComponent(props: Props) {
           onDrop={onDrop}
           x={x} y={y} 
           color={marked}
+          key={x + y*8}
           tileIsWhite={isWhite} ></Tile>
         )
       
@@ -162,14 +232,12 @@ export default function ChessBoardComponent(props: Props) {
     zIndex: 2,
   } 
 
+  const tileElements = document.getElementsByClassName("tile");
   const ghostPieceStyle: CSSProperties = {
     position: "fixed",
-    width: `${tileElements ? tileElements[0]?.clientWidth : 0}px`,
-    height: `${tileElements ? tileElements[0]?.clientHeight : 0}px`,
+    width: `${tileElements ? tileElements[0]?.clientWidth*5 : 0}px`,
+    height: `${tileElements ? tileElements[0]?.clientHeight*2 : 0}px`,
   } 
-
-
-
 
   return (
       <React.Fragment>
@@ -187,7 +255,7 @@ export default function ChessBoardComponent(props: Props) {
         </div>
         <div>
           {check && 
-          <ConfettiExplosion style={confettiStyle} force={0.4} duration={2200} particleCount={35} width={400}/>
+          <ConfettiExplosion style={confettiStyle} force={1} duration={2200} particleCount={35} width={1000}/>
           }
         </div>
         <div> 

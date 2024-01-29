@@ -46,18 +46,19 @@
 .xNotation{
     position: absolute;
     user-select: none;
-    font-size: 1em;
+    font-size: max(min(2vw, 2vh), 0.5rem);
     
-    top: 75%;
+    top: 73%;
     left: 88%;
 }
 
 .yNotation {
     position: absolute;
     user-select: none;
-    font-size: 1em;
+    font-size: max(min(2vw, 2vh), 0.5rem);
     bottom: 75%;
     right: 88%;
+    
 }
 
 

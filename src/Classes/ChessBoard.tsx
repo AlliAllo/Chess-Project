@@ -2,19 +2,19 @@
 import { Square } from './ChessGame';
 import { Chessboard } from './ChessGame';
 
-import WhiteKing from '../Assets/whiteKing.png';
-import WhitePawn from '../Assets/whitePawn.png';
-import WhiteRook from '../Assets/whiteRook.png';
-import WhiteBishop from '../Assets/whiteBishop.png';
-import WhiteQueen from '../Assets/whiteQueen.png';
-import WhiteKnight from '../Assets/whiteKnight.png';
+import WhiteKing from '../Assets/wk.png';
+import WhitePawn from '../Assets/wp.png';
+import WhiteRook from '../Assets/wr.png';
+import WhiteBishop from '../Assets/wb.png';
+import WhiteQueen from '../Assets/wq.png';
+import WhiteKnight from '../Assets/wn.png';
 
-import BlackKing from '../Assets/blackKing.png';
-import BlackPawn from '../Assets/blackPawn.png';
-import BlackRook from '../Assets/blackRook.png';
-import BlackBishop from '../Assets/blackBishop.png';
-import BlackQueen from '../Assets/blackQueen.png';
-import BlackKnight from '../Assets/blackKnight.png';
+import BlackKing from '../Assets/bk.png';
+import BlackPawn from '../Assets/bp.png';
+import BlackRook from '../Assets/br.png';
+import BlackBishop from '../Assets/bb.png';
+import BlackQueen from '../Assets/bq.png';
+import BlackKnight from '../Assets/bn.png';
        
 
 
@@ -46,7 +46,7 @@ export class ChessBoard {
   
     constructor(fen: string){
       this.pieceSymbolToValue = new Map<string, number>([
-        ['K', Number.MAX_SAFE_INTEGER],
+        ['K', 10000],
         ['Q', 9],
         ['R', 5],
         ['B', 3],
@@ -86,18 +86,19 @@ export class ChessBoard {
     }
 
     /**
-     * Create board based on a FEN string.
+     * Create board based on a FEN string. Only takes into account the pieces, not the turn, castling rights, etc. 
      * @param fen 
      */
-    createBoard(fen: string): void {
+    createBoard(fullFen: string): void {
       this.board = Array(8).fill(null).map(() => Array(8).fill(null));
 
-      // "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
       // Include some sort of test that FEN/PGN is valid
       // We start with only FEN notation for creating board.
       let x: number = 0
       let y: number = 7
       let white: boolean 
+
+      const fen = fullFen.split(" ")[0];
 
       for (let i = 0; i < fen.length; i++) {
         let char = fen.charAt(i)
