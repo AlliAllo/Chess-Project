@@ -16,6 +16,7 @@ function ask(fen, depth) {
             const bestMove = bestMoveLine ? bestMoveLine.split(' ')[1] : null;
             
             if (bestMove !== null) {
+                stockfish.kill();
                 // Resolve the promise with the best move
                 resolve(bestMove);
             }
@@ -28,8 +29,7 @@ function ask(fen, depth) {
 
         stockfish.stdin.write(`position fen ${fen}\n`);
         stockfish.stdin.write(`go depth ${depth}\n`);
-
-        stockfish.kill();
+                
     });
 }
 

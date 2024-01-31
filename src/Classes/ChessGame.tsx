@@ -201,6 +201,8 @@ export class ChessGame{
       this.updateKingPosition(newKing);
       this.addNotation(move, piece, false, !leftSideCastling);
 
+      this.updateGameAfterMove(newKing, false);
+
       return true;
       
     }
@@ -221,15 +223,25 @@ export class ChessGame{
     }
 
     /**
-     * This function is called in the frontend when the user selects a piece to promote to.
+     * This function is called in the frontend when the user selects a piece to promote to. 
      * @param newPieceType 
      * @returns 
      */
-    makePawnPromotion(newPieceType: string): void {
-      if (!this.promotionInformation) return;
+    makePawnPromotion(newPieceType: string, computerMove: boolean, position?: Square, destination?: Square): boolean {
+      if (!this.promotionInformation && !computerMove) return false;
+      this.turn++;
 
-      const piece = this.promotionInformation.piece;
-      const move = this.promotionInformation.move;
+      let piece: Piece;
+      let move: Square;
+      if (this.promotionInformation === null && computerMove && position) {
+        piece = this.chessBoard[position![0]][position![1]] as Piece;
+        move = destination!;
+      }
+      else {
+        piece = this.promotionInformation!.piece;
+        move = this.promotionInformation!.move;
+      }
+
 
       const newValue = this.ChessBoard.getPieceSymbolToValue().get(newPieceType) as number
       const newImageURL = this.ChessBoard.getPieceSymbolToImageURL().get(newPieceType)?.get(piece.white) as string
@@ -242,16 +254,18 @@ export class ChessGame{
 
       this.addNotation(move, piece, capture, null, newPieceType);
       
-      this.makeMove(piece, move);
-     
+
+      this.updateGameAfterMove(newPiece, capture);
+
+      return true;
     }
 
-    makeMove(piece: Piece, move: Square): boolean {
+    makeMove(piece: Piece, move: Square, computerMove?: boolean): boolean {
       if (piece.white !== this.whoseTurn()) return false;
       if (this.checkMate || this.staleMate) return false;
       if (!piece.legalMoves.some(a => a[0] === move[0] && a[1] === move[1])) return false;
       if (piece.x === move[0] && piece.y === move[1]) return false;
-      if (piece.symbol === "P" && (move[1] === 0 || move[1] === 7) && !this.promotion) { // Pawn promotion
+      if (piece.symbol === "P" && (move[1] === 0 || move[1] === 7) && !this.promotion && !computerMove) { // Pawn promotion
         // We'll need to store some information about the pawn promotion.
         this.promotionInformation = {piece: piece, move: move};
         this.promotion = true;
@@ -270,8 +284,9 @@ export class ChessGame{
         this.chessBoard[piece.x][piece.y] = null; 
         this.chessBoard[move[0]][move[1]] = newPiece;
 
-        this.updateKingPosition(newPiece);
         this.addNotation(move, piece, capture, null);
+
+        this.updateGameAfterMove(newPiece, capture);      
       }
       
       if (piece.symbol === "P" && Math.abs(piece.y - move[1]) === 2) {
@@ -279,8 +294,14 @@ export class ChessGame{
         this.doubleSquarePawnXPosition = piece.x;
       }
 
+      return true;
+    }
+
+    updateGameAfterMove(piece: Piece, capture: boolean): void {
       piece.hasMoved = true;
+      this.updateKingPosition(piece);
       this.updateCanCastle(piece);
+      
       this.check = false;
       this.doubleCheck = false;
       this.doubleSquarePawnMove = false;
@@ -291,9 +312,8 @@ export class ChessGame{
 
       this.fiftyMoveRuleCounterIncrement(piece, capture);
       this.positionHistory.push(this.getFENFromBoard());
-
-      return true;
     }
+
 
     fiftyMoveRuleCounterIncrement(piece: Piece, capture: boolean): void {
       if (piece.symbol === "P" || capture) this.fiftyMoveRuleCounter = 0;
@@ -644,13 +664,17 @@ export class ChessGame{
       direction[1] = y < 0 ? -1 : y > 0 ? 1 : 0;
 
       const lineOfAttack: Square[] = []
+      lineOfAttack.push([attacker.x, attacker.y]) // Add attackers position to the line of attack.
+
       // We aren't afraid of going out of bounds here, since we are only looking at the line of attack. This ends up making the code a lot simpler.
       for (let i = 1; i <= 7; i++){
         lineOfAttack.push([attacker.x+i*direction[0], attacker.y+i*direction[1]])
+        if (attacker.x+i*direction[0] === kingPosition[0] && attacker.y+i*direction[1] === kingPosition[1]) {
+          lineOfAttack.push([attacker.x+(i+1)*direction[0], attacker.y+(i+1)*direction[1]])
+          break;
+        }
       }
       
-      lineOfAttack.push([attacker.x, attacker.y]) // Add attackers position to the line of attack.
-
       return lineOfAttack
     }
 
@@ -685,7 +709,8 @@ export class ChessGame{
           }
           else {
             piece.legalMoves = piece.legalMoves.filter(pieceMove => {
-              return lineOfAttack.some(square => pieceMove[0] === square[0] && pieceMove[1] === square[1])   
+              const adjustedLineOfAttack = lineOfAttack.slice(0, lineOfAttack.length-1) // Remove the last square from the line of attack. This is the square beyond the king.
+              return adjustedLineOfAttack.some(square => pieceMove[0] === square[0] && pieceMove[1] === square[1])   
             })
           }
         })

@@ -2,52 +2,76 @@ import React, { ReactNode, useRef, useCallback, useState, CSSProperties, useEffe
 import Tile from './TileComponent';
 import PawnPromotion from './PawnPromotionComponent';
 
-
 import { Piece } from '../Classes/ChessBoard';
-// import { Square } from '../Classes/ChessGame';
+import { Square } from '../Classes/ChessGame';
 
 import './CSS/ChessBoard.css';
 import { ChessGame } from '../Classes/ChessGame';
 
 import ConfettiExplosion from 'react-confetti-explosion';
 
+import { useGameContext } from './GameContext';
+
 
 
 interface Props {
   children?: ReactNode
+  onKeyPressed: (e: React.KeyboardEvent) => void
   
   getAlgebraicNotation: (PGN: string) => void
   // onKeyPress: (e: React.KeyboardEvent) => void
 }
 
-
-
-
-const game = new ChessGame();
 let promotionSquareX = 1000;
 
-function stockfishMoveToXY(move: string): [number, number] {
+function stockfishMoveToXY(move: string): Square {
   const x: number = move[0].charCodeAt(0) - 97;
   const y = parseInt(move[1], 10) - 1; // Adjust to 0-based index
   return [x, y];
 }
 
+export enum GameType {
+  HumanVsHuman = "Human vs Human",
+  HumanVsComputer = "Human vs Computer",
+  ComputerVsComputer = "Computer vs Computer",
+  SingleHuman = "Single Human",
+}
 
 export default function ChessBoardComponent(props: Props) {
   const ghostPiece = useRef<HTMLDivElement>(null);
 
   const [grabbedPiece, setGrabbedPiece] = useState<Piece | null>(null);
-  const [chessGame, setChessGame] = useState<ChessGame>(game);
+  const [chessGame, setChessGame] = useState<ChessGame>(new ChessGame());
   const [promotion, setPromotion] = useState(chessGame.getPromotion());
   const [check, setCheck] = useState(false);
   const [attacker , setAttacker] = useState<Piece | null>(null);
   const [positionNumber, setPositionNumber] = useState<number>(0);
   const [playerColor, setPlayerColor] = useState<boolean>(true); // true = white, false = black
-  const [playerTurn, setPlayerTurn] = useState<boolean>(chessGame.whoseTurn()); // true = white, false = black
 
-  console.log(playerTurn)
+  const { gameType } = useGameContext();
 
-  const currentFen = chessGame.getPositionHistory()[chessGame.getPositionHistory().length - 1];
+  const resetGame = () => {
+    setChessGame(new ChessGame());
+  }
+
+  const chessboardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Set focus on the chessboard element
+    if (chessboardRef.current) {
+      chessboardRef.current.focus();
+    }
+  }, [grabbedPiece]);
+
+  useEffect(() => {
+    // When the game type changes, reset the game
+    resetGame();
+  }, [gameType]);
+
+  useEffect(() => {
+  }, [props.onKeyPressed]);
+
+  const latestFen = chessGame.getPositionHistory()[chessGame.getPositionHistory().length - 1];
   // const onDrop = useCallback((e: React.KeyboardEvent) => {
   //   loadChessBoard(e);
   // }, []);
@@ -68,7 +92,8 @@ export default function ChessBoardComponent(props: Props) {
   
       const data = await response.json();
       const move = data.move;
-      return await move;
+      console.log(move);
+      return move;
     } catch (error) {
       console.error('Error fetching move from backend:', error);
     }
@@ -80,25 +105,32 @@ export default function ChessBoardComponent(props: Props) {
     move(e);
       }, [setGrabbedPiece]);
 
+
   // This is where we drop the piece. Very important function :)
   const onDrop = useCallback((x: number, y: number) => {
     if (!(grabbedPiece)) return;
-    if (positionNumber === chessGame.getPositionHistory().length - 1 && playerColor === game.whoseTurn()  && chessGame.makeMove(grabbedPiece, [x, y])) {
+    const isCorrectColor: Boolean = chessGame.whoseTurn() === playerColor;
+    const isSingleHuman: Boolean = gameType === GameType.SingleHuman;
+    const isInLatestFen: Boolean = chessGame.getPositionHistory().length - 1 === positionNumber;
+  
+    console.log(isInLatestFen, positionNumber, chessGame.getPositionHistory().length - 1)
+    if (isInLatestFen && (isCorrectColor || isSingleHuman) && chessGame.makeMove(grabbedPiece, [x, y])) {
       // Call the usecallback hook to update the notation of the game.
       props.getAlgebraicNotation(chessGame.getPGN())
       setChessGame(chessGame);
+      setPositionNumber(chessGame.getPositionHistory().length - 1);
     }
     setAttacker(chessGame.getAttacker());
     setCheck(chessGame.getCheck());
     setGrabbedPiece(null);
     setPromotion(chessGame.getPromotion());
-    setPositionNumber(chessGame.getPositionHistory().length - 1);
+
     if (chessGame.getPromotion()) promotionSquareX = x;
 
-  }, [grabbedPiece, positionNumber, chessGame, playerColor, props]);
+  }, [grabbedPiece, positionNumber, chessGame, playerColor, props, gameType]);
 
   const onPromotionSelect = useCallback((promotionType: string) => {
-    chessGame.makePawnPromotion(promotionType);
+    chessGame.makePawnPromotion(promotionType, false);
     setPromotion(chessGame.getPromotion());
   } , [chessGame, setPromotion]);
 
@@ -117,8 +149,10 @@ export default function ChessBoardComponent(props: Props) {
   };
 
   // Check the condition after the move is fetched and computerMove is updated
-  if (playerColor !== chessGame.whoseTurn()) {
-    fetchMoveFromBackend(currentFen, 10).then(
+  if (playerColor !== chessGame.whoseTurn() && gameType === GameType.HumanVsComputer) {
+    const depth = 10;
+
+    fetchMoveFromBackend(latestFen, depth).then(
       function(move) {  
         if (playerColor === chessGame.whoseTurn()) return
         if (move === null || move === undefined) {
@@ -126,27 +160,39 @@ export default function ChessBoardComponent(props: Props) {
           return;
         }
         
-        const position = stockfishMoveToXY(move[0] + move[1]);
-        const destination = stockfishMoveToXY(move[2] + move[3]);
-        console.log(position, destination);
-        console.log(chessGame.whoseTurn(), playerColor);
+        const position: Square = stockfishMoveToXY(move[0] + move[1]);
+        const destination: Square = stockfishMoveToXY(move[2] + move[3]);
         
         const piece = chessGame.getBoard()[position[0]][position[1]] as Piece;
         if (piece === null) return;
 
+        let successfulMove: boolean = false;
+
         if (piece.symbol === "K" && Math.abs(position[0] - destination[0]) <= 2) {
-          console.log("caslting")
-          console.log(chessGame.castleKing(piece, destination))
-        } else {
-          console.log(chessGame.makeMove(piece, destination));
+          console.log("castle")
+          if (chessGame.castleKing(piece, destination)) successfulMove = true;
+        } 
+        else if (piece.symbol === "P" && Math.abs(position[0] - destination[0]) === 1 && chessGame.getBoard()[destination[0]][destination[1]] === null) {
+          if (chessGame.enPassant(piece, destination)) successfulMove = true;
         }
-        setPlayerTurn(chessGame.whoseTurn());
+        else if (piece.symbol === "P" && move.length === 5) {
+          if (chessGame.makePawnPromotion(move[4].toUpperCase, true, position, destination)) successfulMove = true;
+
+        }
+        else {
+          if (chessGame.makeMove(piece, destination)) successfulMove = true;
+        }
+
+        if (successfulMove) {
+          setPositionNumber(chessGame.getPositionHistory().length - 1);
+        }
+
         setChessGame(chessGame);
         setAttacker(chessGame.getAttacker());
         setCheck(chessGame.getCheck());
-        setPositionNumber(chessGame.getPositionHistory().length - 1);
         setPromotion(chessGame.getPromotion());
         props.getAlgebraicNotation(chessGame.getPGN());
+
 
       },
       function(error) { console.log(error); }
@@ -154,27 +200,22 @@ export default function ChessBoardComponent(props: Props) {
   }
 
 
-  // const loadChessBoard = (e: React.KeyboardEvent) => {
-  //   if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-  //   const back = e.key === "ArrowLeft" ? true : false;
+  const loadChessBoard = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    const back = e.key === "ArrowLeft" ? true : false;
 
-  //   console.log(positionNumber, chessGame.getPositionHistory().length)
-  //   if (back === true && positionNumber > 0) {
-  //     const position = chessGame.getPositionHistory()[positionNumber - 1];
-  //     setPositionNumber(positionNumber - 1);
-  //     console.log(positionNumber, position)
-  //     game.setChessBoard(position);
-  //   }
-  //   if (back === false && positionNumber < chessGame.getPositionHistory().length - 1) {
-  //     const position = chessGame.getPositionHistory()[positionNumber + 1];
-  //     setPositionNumber(positionNumber + 1);
-  //     console.log(positionNumber, position)
-
-  //     game.setChessBoard(position);
-  //   }
+    if (back === true && positionNumber > 0) {
+      const position = chessGame.getPositionHistory()[positionNumber - 1];
+      setPositionNumber(positionNumber - 1);
+      chessGame.setChessBoard(position);
+    }
+    if (back === false && positionNumber < chessGame.getPositionHistory().length - 1) {
+      const position = chessGame.getPositionHistory()[positionNumber + 1];
+      setPositionNumber(positionNumber + 1);
+      chessGame.setChessBoard(position);
+    }
     
-  //   setChessGame(game);
-  // }
+  }
   
   let piecesToDisplayJSX: JSX.Element[] = []
 
@@ -205,7 +246,6 @@ export default function ChessBoardComponent(props: Props) {
           }
         });
         */
-        
         
         piecesToDisplayJSX.push(
           <Tile
@@ -241,7 +281,12 @@ export default function ChessBoardComponent(props: Props) {
 
   return (
       <React.Fragment>
-        <div draggable={false} className="chessboard" onMouseMove={e => move(e)}>
+        <div  ref={chessboardRef}
+              draggable={false} 
+              className="chessboard" 
+              tabIndex={0} 
+              onMouseMove={e => move(e)} 
+              onKeyDown={e => loadChessBoard(e)}> 
           {piecesToDisplayJSX}
         </div>
         <div ref={ghostPiece} className="ghostPiece" style={ghostPieceStyle}>

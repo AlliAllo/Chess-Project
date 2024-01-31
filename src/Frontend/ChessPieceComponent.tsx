@@ -16,7 +16,10 @@ export default function ChessPiece(props: pieceProps) {
     }
 
   return (
-    <div className="chessPiece centered" onMouseDown={e => grab(props.piece, e)} onClick={() => (props.onPromotionClick) ? props.onPromotionClick(props.piece.symbol) : undefined}>
+    <div  className="chessPiece centered" 
+          onMouseDown={e => grab(props.piece, e)} 
+          onClick={() => (props.onPromotionClick) ? props.onPromotionClick(props.piece.symbol) : undefined}
+          tabIndex={3}>
         {props.piece.imageURL && <img className='chessPieceIMG' draggable={false} src={props.piece.imageURL} alt="chessPiece" ></img>}
     </div>
   );

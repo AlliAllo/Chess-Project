@@ -13,6 +13,7 @@ router.post('/getMove', async (req, res) => {
         res.json({ move });
     } catch (error) {
         console.error("Error:", error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 

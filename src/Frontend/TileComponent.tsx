@@ -74,7 +74,7 @@ export default function Tile(props: TileProps) {
 
   
   return (
-    <div draggable={false} className="tile" style={tileStyle} 
+    <div draggable={false} className="tile" style={tileStyle} tabIndex={2}
     onMouseUp={e => drop(props.grabbedPiece, e)} 
     //onMouseDown={selectedTile}
     onContextMenu={e => highlightTile(e)}>
