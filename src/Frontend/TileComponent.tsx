@@ -12,6 +12,7 @@ interface TileProps {
   x: number
   y: number
   color?: string
+  sizeOverride?: number
 
   onStartDragging: ((thisPiece: Piece | null, e: React.MouseEvent) => void) | undefined
   onDrop: ((x: number, y: number) => void) | undefined
@@ -33,8 +34,12 @@ export default function Tile(props: TileProps) {
   
   const tileColor = props.color ? props.color : props.tileIsWhite ? 'hsl(90deg 27.12% 46.27%)' : 'hsl(60deg 45.16% 87.84%)'
   
+  
+
   const tileStyle: CSSProperties = {
     backgroundColor: highlightColor ? highlightColor : tileColor,
+    width: props.sizeOverride ? `${props.sizeOverride}px` : undefined,
+    height: props.sizeOverride ? `${props.sizeOverride}px` : undefined,
   };
 
   function highlightTile(e: React.MouseEvent) {

@@ -47,6 +47,7 @@ export default function ChessBoardComponent(props: Props) {
   const [attacker , setAttacker] = useState<Piece | null>(null);
   const [positionNumber, setPositionNumber] = useState<number>(0);
   const [playerColor, setPlayerColor] = useState<boolean>(true); // true = white, false = black
+  const [computerHasMadeMove, setComputerHasMadeMove] = useState(false);
 
   const { gameType } = useGameContext();
 
@@ -112,9 +113,8 @@ export default function ChessBoardComponent(props: Props) {
     const isCorrectColor: Boolean = chessGame.whoseTurn() === playerColor;
     const isSingleHuman: Boolean = gameType === GameType.SingleHuman;
     const isInLatestFen: Boolean = chessGame.getPositionHistory().length - 1 === positionNumber;
-  
-    console.log(isInLatestFen, positionNumber, chessGame.getPositionHistory().length - 1)
-    if (isInLatestFen && (isCorrectColor || isSingleHuman) && chessGame.makeMove(grabbedPiece, [x, y])) {
+
+    if (isInLatestFen && (isCorrectColor || isSingleHuman) && !promotion && chessGame.makeMove(grabbedPiece, [x, y])) {
       // Call the usecallback hook to update the notation of the game.
       props.getAlgebraicNotation(chessGame.getPGN())
       setChessGame(chessGame);
@@ -124,15 +124,19 @@ export default function ChessBoardComponent(props: Props) {
     setCheck(chessGame.getCheck());
     setGrabbedPiece(null);
     setPromotion(chessGame.getPromotion());
+    setComputerHasMadeMove(false);
 
     if (chessGame.getPromotion()) promotionSquareX = x;
 
-  }, [grabbedPiece, positionNumber, chessGame, playerColor, props, gameType]);
+  }, [grabbedPiece, chessGame, playerColor, gameType, positionNumber, promotion, props]);
 
   const onPromotionSelect = useCallback((promotionType: string) => {
     chessGame.makePawnPromotion(promotionType, false);
     setPromotion(chessGame.getPromotion());
-  } , [chessGame, setPromotion]);
+    props.getAlgebraicNotation(chessGame.getPGN())
+    setChessGame(chessGame);
+    setPositionNumber(chessGame.getPositionHistory().length - 1);
+  } , [chessGame, props]);
 
   const revertPromotion = useCallback(() => {
     if (!chessGame.getPromotion()) return;
@@ -192,6 +196,7 @@ export default function ChessBoardComponent(props: Props) {
         setCheck(chessGame.getCheck());
         setPromotion(chessGame.getPromotion());
         props.getAlgebraicNotation(chessGame.getPGN());
+        setComputerHasMadeMove(true);
 
 
       },
@@ -201,7 +206,8 @@ export default function ChessBoardComponent(props: Props) {
 
 
   const loadChessBoard = (e: React.KeyboardEvent) => {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+
+    if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || !computerHasMadeMove) return;
     const back = e.key === "ArrowLeft" ? true : false;
 
     if (back === true && positionNumber > 0) {
@@ -263,7 +269,9 @@ export default function ChessBoardComponent(props: Props) {
       }
   }
 
+  const tileSize = document.getElementsByClassName("tile")[0]?.clientWidth;
   
+  const topLeftTilePostion = document.getElementsByClassName("tile")[0]?.getBoundingClientRect();
 
   const confettiStyle: CSSProperties = {
     position: "absolute",
@@ -279,15 +287,17 @@ export default function ChessBoardComponent(props: Props) {
     height: `${tileElements ? tileElements[0]?.clientHeight*2 : 0}px`,
   } 
 
+  
   return (
       <React.Fragment>
-        <div  ref={chessboardRef}
-              draggable={false} 
-              className="chessboard" 
-              tabIndex={0} 
-              onMouseMove={e => move(e)} 
-              onKeyDown={e => loadChessBoard(e)}> 
-          {piecesToDisplayJSX}
+        <div  
+          ref={chessboardRef}
+          draggable={false} 
+          className="chessboard" 
+          tabIndex={0} 
+          onMouseMove={e => move(e)} 
+          onKeyDown={e => loadChessBoard(e)}> 
+            {piecesToDisplayJSX}
         </div>
         <div ref={ghostPiece} className="ghostPiece" style={ghostPieceStyle}>
           {grabbedPiece && grabbedPiece.imageURL && 
@@ -305,11 +315,16 @@ export default function ChessBoardComponent(props: Props) {
         </div>
         <div> 
           {promotion &&  
-            <PawnPromotion whoIsPromoting={chessGame.getPromotionInformation()?.piece.white as boolean}
-              onPromotionSelect={(promotion: string) => {onPromotionSelect(promotion)}}
-              promotionSquareX={promotionSquareX}
-              onRevert={() => revertPromotion()}
-              ></PawnPromotion>}
+            <PawnPromotion 
+                key={1} 
+                tileSize={tileSize}
+                topLeftTilePostion={topLeftTilePostion}
+                whoIsPromoting={chessGame.getPromotionInformation()?.piece.white as boolean}
+                onPromotionSelect={(promotion: string) => {onPromotionSelect(promotion)}}
+                promotionSquareX={promotionSquareX}
+                onRevert={() => revertPromotion()}
+                >
+            </PawnPromotion>}
         </div>
       </React.Fragment>
        

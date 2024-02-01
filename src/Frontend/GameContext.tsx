@@ -11,7 +11,7 @@ interface GameContextProps {
 const GameContext = createContext<GameContextProps | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [gameType, setGameType] = useState<GameType>(GameType.HumanVsComputer);
+    const [gameType, setGameType] = useState<GameType>(GameType.SingleHuman);
 
   const handleGameTypeChange = (newGameType: GameType) => {
     setGameType(newGameType);

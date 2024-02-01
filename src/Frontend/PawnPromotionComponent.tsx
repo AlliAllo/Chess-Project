@@ -2,39 +2,41 @@ import Tile from './TileComponent';
 import { Piece} from '../Classes/ChessBoard';
 import React, { CSSProperties } from 'react';
 import './CSS/ChessBoard.css';
+import './CSS/PawnPromotion.css';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
 
-import WhiteKing from '../Assets/whiteKing.png';
-import WhitePawn from '../Assets/whitePawn.png';
-import WhiteRook from '../Assets/whiteRook.png';
-import WhiteBishop from '../Assets/whiteBishop.png';
-import WhiteQueen from '../Assets/whiteQueen.png';
-import WhiteKnight from '../Assets/whiteKnight.png';
+import WhiteKing from '../Assets/wk.png';
+import WhitePawn from '../Assets/wp.png';
+import WhiteRook from '../Assets/wr.png';
+import WhiteBishop from '../Assets/wb.png';
+import WhiteQueen from '../Assets/wq.png';
+import WhiteKnight from '../Assets/wk.png';
 
-import BlackKing from '../Assets/blackKing.png';
-import BlackPawn from '../Assets/blackPawn.png';
-import BlackRook from '../Assets/blackRook.png';
-import BlackBishop from '../Assets/blackBishop.png';
-import BlackQueen from '../Assets/blackQueen.png';
-import BlackKnight from '../Assets/blackKnight.png';
+import BlackKing from '../Assets/bk.png';
+import BlackPawn from '../Assets/bp.png';
+import BlackRook from '../Assets/br.png';
+import BlackBishop from '../Assets/bb.png';
+import BlackQueen from '../Assets/bq.png';
+import BlackKnight from '../Assets/bk.png';
 
 
 
 interface PromotionOptionsProps {
   whoIsPromoting: boolean; // true = white, false = black
   promotionSquareX: number;
+  topLeftTilePostion: DOMRect;
+  tileSize: number;
   children?: React.ReactNode;
   onPromotionSelect: (promotion: string) => void;
   onRevert: () => void;
+  
 }
 
 
 
 export default function PawnPromotion(props: PromotionOptionsProps) {
-
- 
 
   // Here we make some artifical pieces to show the user what they can promote to.
   const row = props.whoIsPromoting ? 0 : 7;
@@ -59,7 +61,6 @@ export default function PawnPromotion(props: PromotionOptionsProps) {
     const upOrDown = props.whoIsPromoting ? -1 : 1;
 
     const piece: Piece = {imageURL: imageURL, x: props.promotionSquareX, y: row+i*upOrDown, value: undefined, white: props.whoIsPromoting, hasMoved: undefined, symbol: symbol, legalMoves: []}
-
     piecesToDisplayJSX.push(
       <Tile
       piece={piece}
@@ -67,39 +68,51 @@ export default function PawnPromotion(props: PromotionOptionsProps) {
       grabbedPiece={undefined}
       onStartDragging={undefined}
       onDrop={undefined}
-      x={1000} y={row+i*upOrDown}
+      sizeOverride={props.tileSize}
+      x={500} y={500}
       tileIsWhite={undefined}
-      color={'(255, 255, 255)'}
+      color='#FFFFFF'
       onPromotionClick={props.onPromotionSelect}
-        ></Tile>
+      key={i*55}>
+      </Tile>
     )
-
   }
+  
+
+  const topLeftX = props.topLeftTilePostion.left;
+  const topLeftY = props.topLeftTilePostion.top;
+  
+  console.log(props.tileSize)
 
   const whitePawnPromotionStyle: CSSProperties = {
-    top: row*100 + 240,
-    left: 785 + props.promotionSquareX*100,
+    top: topLeftY + row*props.tileSize,
+    left: topLeftX + Math.floor(props.promotionSquareX*props.tileSize),
   };
 
   const blackPawnPromotionStyle: CSSProperties = {
-    top: row*100 - 110,
-    left: 785 + props.promotionSquareX*100,
+    top:  4.5*topLeftY + 7,
+    left: topLeftX + props.promotionSquareX*props.tileSize,
+  };
+
+  const pawnPromotionHalfSquareStyle: CSSProperties = {
+    width: props.tileSize,
+    height: props.tileSize*0.5,
   };
 
   return (
     <React.Fragment>
 
     <div className='pawnPromotion' style={props.whoIsPromoting ? whitePawnPromotionStyle : blackPawnPromotionStyle} >
-        {!props.whoIsPromoting ? <div className="pawnPromotionHalfSquare">
+        {!props.whoIsPromoting ? <div className="pawnPromotionHalfSquare" style={pawnPromotionHalfSquareStyle} onClick={() => props.onRevert()}>
           <FontAwesomeIcon icon={faXmark} style={{color: "#8894aa",}} onClick={() => props.onRevert()}/>
         </div> : null}
 
-        <div draggable={false}>
-        {piecesToDisplayJSX}
+        <div className='promotionOptions' draggable={false}>
+          {piecesToDisplayJSX}
         </div> 
 
-        {props.whoIsPromoting ? <div className="pawnPromotionHalfSquare">
-            <FontAwesomeIcon icon={faXmark} style={{color: "#8894aa",}} onClick={() => props.onRevert()}/>
+        {props.whoIsPromoting ? <div className="pawnPromotionHalfSquare" style={pawnPromotionHalfSquareStyle} onClick={() => props.onRevert()}>
+            <FontAwesomeIcon icon={faXmark} style={{color: "#8894aa",}} />
         </div>
         : null}
     </div>
