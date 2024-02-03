@@ -37,11 +37,12 @@ export enum GameType {
   SingleHuman = "Single Human",
 }
 
+let chessGame = new ChessGame();
+
 export default function ChessBoardComponent(props: Props) {
   const ghostPiece = useRef<HTMLDivElement>(null);
 
   const [grabbedPiece, setGrabbedPiece] = useState<Piece | null>(null);
-  const [chessGame, setChessGame] = useState<ChessGame>(new ChessGame());
   const [promotion, setPromotion] = useState(chessGame.getPromotion());
   const [check, setCheck] = useState(false);
   const [attacker , setAttacker] = useState<Piece | null>(null);
@@ -52,8 +53,7 @@ export default function ChessBoardComponent(props: Props) {
   const { gameType } = useGameContext();
 
   const resetGame = () => {
-    console.log(chessGame.getPositionHistory());
-    setChessGame(new ChessGame());
+    chessGame = new ChessGame();
     setGrabbedPiece(null);
     setPromotion(false);
     setCheck(false);
@@ -89,7 +89,7 @@ export default function ChessBoardComponent(props: Props) {
   
   useEffect(() => {
     props.getAlgebraicNotation(chessGame.getPGN());
-  }, [chessGame, props]);
+  }, [props]);
 
   
   const fetchMoveFromBackend = async (fen: string, depth: number) => {
@@ -128,7 +128,6 @@ export default function ChessBoardComponent(props: Props) {
     if (isInLatestFen && (isCorrectColor || isSingleHuman) && !promotion && chessGame.makeMove(grabbedPiece, [x, y])) {
       // Call the usecallback hook to update the notation of the game.
       props.getAlgebraicNotation(chessGame.getPGN())
-      setChessGame(chessGame);
       setPositionNumber(chessGame.getPositionHistory().length - 1);
     }
     setAttacker(chessGame.getAttacker());
@@ -139,22 +138,21 @@ export default function ChessBoardComponent(props: Props) {
 
     if (chessGame.getPromotion()) promotionSquareX = x;
 
-  }, [grabbedPiece, chessGame, playerColor, gameType, positionNumber, promotion, props]);
+  }, [grabbedPiece, playerColor, gameType, positionNumber, promotion, props]);
 
   const onPromotionSelect = useCallback((promotionType: string) => {
     chessGame.makePawnPromotion(promotionType, false);
     setPromotion(chessGame.getPromotion());
     props.getAlgebraicNotation(chessGame.getPGN())
-    setChessGame(chessGame);
     setPositionNumber(chessGame.getPositionHistory().length - 1);
-  } , [chessGame, props]);
+  } , [props]);
 
   const revertPromotion = useCallback(() => {
     if (!chessGame.getPromotion()) return;
     chessGame.setPromotionInformationNull();
     chessGame.setPromotion(false);
     setPromotion(chessGame.getPromotion());
-  }, [chessGame, setPromotion]);
+  }, [setPromotion]);
 
   const move = (e: React.MouseEvent) => {
     if (ghostPiece.current){
@@ -189,7 +187,6 @@ export default function ChessBoardComponent(props: Props) {
         let successfulMove: boolean = false;
 
         if (piece.symbol === "K" && Math.abs(position[0] - destination[0]) <= 2) {
-          console.log("castle")
           if (chessGame.castleKing(piece, destination)) successfulMove = true;
         } 
         else if (piece.symbol === "P" && Math.abs(position[0] - destination[0]) === 1 && chessGame.getBoard()[destination[0]][destination[1]] === null) {
@@ -207,7 +204,6 @@ export default function ChessBoardComponent(props: Props) {
           setPositionNumber(chessGame.getPositionHistory().length - 1);
         }
 
-        setChessGame(chessGame);
         setAttacker(chessGame.getAttacker());
         setCheck(chessGame.getCheck());
         setPromotion(chessGame.getPromotion());
