@@ -12,14 +12,14 @@ import WhitePawn from '../Assets/wp.png';
 import WhiteRook from '../Assets/wr.png';
 import WhiteBishop from '../Assets/wb.png';
 import WhiteQueen from '../Assets/wq.png';
-import WhiteKnight from '../Assets/wk.png';
+import WhiteKnight from '../Assets/wn.png';
 
 import BlackKing from '../Assets/bk.png';
 import BlackPawn from '../Assets/bp.png';
 import BlackRook from '../Assets/br.png';
 import BlackBishop from '../Assets/bb.png';
 import BlackQueen from '../Assets/bq.png';
-import BlackKnight from '../Assets/bk.png';
+import BlackKnight from '../Assets/bn.png';
 
 
 
@@ -59,7 +59,6 @@ export default function PawnPromotion(props: PromotionOptionsProps) {
 
     const imageURL = symbolToImageURL.get(symbol)?.get(props.whoIsPromoting) as string;
     const upOrDown = props.whoIsPromoting ? -1 : 1;
-
     const piece: Piece = {imageURL: imageURL, x: props.promotionSquareX, y: row+i*upOrDown, value: undefined, white: props.whoIsPromoting, hasMoved: undefined, symbol: symbol, legalMoves: []}
     piecesToDisplayJSX.push(
       <Tile

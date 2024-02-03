@@ -260,6 +260,15 @@ export class ChessGame{
       return true;
     }
 
+    checkIfPawnMakesDoubleMove(piece: Piece, move: Square): boolean {
+      if (piece.symbol === "P" && Math.abs(piece.y - move[1]) === 2) {
+        this.doubleSquarePawnMove = true;
+        this.doubleSquarePawnXPosition = piece.x;
+        return true;
+      }
+      return false;
+    }
+
     makeMove(piece: Piece, move: Square, computerMove?: boolean): boolean {
       if (piece.white !== this.whoseTurn()) return false;
       if (this.checkMate || this.staleMate) return false;
@@ -278,6 +287,7 @@ export class ChessGame{
       const castling = this.castleKing(piece, move);
 
       const capture: boolean = this.chessBoard[move[0]][move[1]] !== null;
+
       if (!castling && !enPassant && !this.promotion){
 
         const newPiece: Piece = { ...piece, x: move[0], y: move[1], hasMoved: true };    
@@ -286,12 +296,8 @@ export class ChessGame{
 
         this.addNotation(move, piece, capture, null);
 
+        this.checkIfPawnMakesDoubleMove(piece, move)
         this.updateGameAfterMove(newPiece, capture);      
-      }
-      
-      if (piece.symbol === "P" && Math.abs(piece.y - move[1]) === 2) {
-        this.doubleSquarePawnMove = true;
-        this.doubleSquarePawnXPosition = piece.x;
       }
 
       return true;
@@ -304,11 +310,12 @@ export class ChessGame{
       
       this.check = false;
       this.doubleCheck = false;
-      this.doubleSquarePawnMove = false;
-      this.doubleSquarePawnXPosition = 0;
       this.promotion = false;
       this.promotionInformation = null;
       this.calcLegalMoves();
+
+      this.doubleSquarePawnMove = false;
+      this.doubleSquarePawnXPosition = 0;
 
       this.fiftyMoveRuleCounterIncrement(piece, capture);
       this.positionHistory.push(this.getFENFromBoard());

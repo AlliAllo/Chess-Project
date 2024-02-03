@@ -52,8 +52,18 @@ export default function ChessBoardComponent(props: Props) {
   const { gameType } = useGameContext();
 
   const resetGame = () => {
+    console.log(chessGame.getPositionHistory());
     setChessGame(new ChessGame());
+    setGrabbedPiece(null);
+    setPromotion(false);
+    setCheck(false);
+    setAttacker(null);
+    setPositionNumber(0);
+    setPlayerColor(true);
+    setComputerHasMadeMove(false);
+
   }
+  console.log(chessGame.getPositionHistory());
 
   const chessboardRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +90,7 @@ export default function ChessBoardComponent(props: Props) {
   useEffect(() => {
     props.getAlgebraicNotation(chessGame.getPGN());
   }, [chessGame, props]);
+
   
   const fetchMoveFromBackend = async (fen: string, depth: number) => {
     try {
@@ -150,7 +161,12 @@ export default function ChessBoardComponent(props: Props) {
       ghostPiece.current.style.top = `${e.clientY  - ghostPiece.current.clientHeight / 2}px`; 
       ghostPiece.current.style.left = `${e.clientX - ghostPiece.current.clientWidth / 2}px`;
     }
-  };
+  }; 
+
+  function handleMouseClicks(e: React.MouseEvent) {
+    if (promotion) revertPromotion();
+  }
+
 
   // Check the condition after the move is fetched and computerMove is updated
   if (playerColor !== chessGame.whoseTurn() && gameType === GameType.HumanVsComputer) {
@@ -206,8 +222,11 @@ export default function ChessBoardComponent(props: Props) {
 
 
   const loadChessBoard = (e: React.KeyboardEvent) => {
+  
+    if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || (!computerHasMadeMove && gameType !== GameType.SingleHuman)) return;
 
-    if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || !computerHasMadeMove) return;
+    e.preventDefault();
+
     const back = e.key === "ArrowLeft" ? true : false;
 
     if (back === true && positionNumber > 0) {
@@ -220,7 +239,6 @@ export default function ChessBoardComponent(props: Props) {
       setPositionNumber(positionNumber + 1);
       chessGame.setChessBoard(position);
     }
-    
   }
   
   let piecesToDisplayJSX: JSX.Element[] = []
@@ -283,8 +301,8 @@ export default function ChessBoardComponent(props: Props) {
   const tileElements = document.getElementsByClassName("tile");
   const ghostPieceStyle: CSSProperties = {
     position: "fixed",
-    width: `${tileElements ? tileElements[0]?.clientWidth*5 : 0}px`,
-    height: `${tileElements ? tileElements[0]?.clientHeight*2 : 0}px`,
+    width: `${tileElements ? tileElements[0]?.clientWidth : 0}px`,
+    height: `${tileElements ? tileElements[0]?.clientHeight : 0}px`,
   } 
 
   
@@ -296,7 +314,8 @@ export default function ChessBoardComponent(props: Props) {
           className="chessboard" 
           tabIndex={0} 
           onMouseMove={e => move(e)} 
-          onKeyDown={e => loadChessBoard(e)}> 
+          onKeyDown={e => loadChessBoard(e)}
+          onMouseDown={e => handleMouseClicks(e)}> 
             {piecesToDisplayJSX}
         </div>
         <div ref={ghostPiece} className="ghostPiece" style={ghostPieceStyle}>
