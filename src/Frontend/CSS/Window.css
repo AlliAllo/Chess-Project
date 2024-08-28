@@ -11,23 +11,6 @@
   font-size: 21px
 }
 
-.resetGameButton {
-  position: absolute;
-  width: 140px;
-  background-color: rgb(49 46 43);
-  color: white;
-  font-size: 21px;
-  padding: 10px;
-  border-radius: 10px;
-  cursor: pointer;
-  user-select: none;
-  border: 1px solid white;
-  transition: 0.2s;
-  margin-left: 50% ;
-  margin-right: 50%;
-
-}
-
 .resetGameButton:active {
   transform: scale(0.9);
 }
@@ -58,7 +41,6 @@
   background-color: #262422;
   color: white;
   font-size: 1.4rem;
-
 }
 
 
@@ -74,23 +56,6 @@
   transition: 0.2s;
 }
 
-.topInfoBar {
-  grid-area: tInfoBar;
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: center;
-  color: white;
-  margin-top: 5vh;
-}
-
-.bottomInfoBar {
-  grid-area: bInfoBar;
-  display: flex;
-  align-items: center;
-  color: white;
-}
-
 .enemyAvatar {
   width: 40px;
   height: 40px;
@@ -99,6 +64,7 @@
   margin-left: calc(2em);
   margin-top: 0.8em;
 
+  user-select: none;
   background-color: transparent;
 }
 
@@ -132,10 +98,68 @@
   user-select: none;
 }
 
+.topInfoBar {
+  grid-area: tInfoBar;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  color: white;
+  margin-top: 5vh;
+}
+
+.bottomInfoBar {
+  grid-area: bInfoBar;
+  display: flex;
+  align-items: center;
+  color: white;
+}
+
+.settings {
+  position: relative;
+  background-color: rgb(49 46 43);
+  color: #989795;
+  font-size: 1.2rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+  left: 91%;
+  bottom: 30%;
+}
+
+.flipBoard {
+  position: relative;
+  background-color: rgb(49 46 43);
+  color: #989795;
+  font-size: 1.2rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+  left: 92%;
+  bottom: 30%;
+  transform: rotate(90deg);
+
+}
+
+.settings:active {
+  transform: scale(0.85);
+}
+
+.settings:hover {
+  color: #cdcccb;
+}
+
+.flipBoard:active {
+  transform: scale(0.85) rotate(90deg);
+}
+
+.flipBoard:hover {
+  color: #cdcccb;
+}
+
 
 .notationBox {
   grid-area: notation;
-
 }
 
 .chessPiece:hover {

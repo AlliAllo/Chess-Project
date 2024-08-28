@@ -17,7 +17,6 @@ import { useGameContext } from './GameContext';
 interface Props {
   children?: ReactNode
   onKeyPressed: (e: React.KeyboardEvent) => void
-  
   getAlgebraicNotation: (PGN: string) => void
   // onKeyPress: (e: React.KeyboardEvent) => void
 }
@@ -52,6 +51,7 @@ export default function ChessBoardComponent(props: Props) {
 
   const { gameType } = useGameContext();
 
+
   const resetGame = () => {
     chessGame = new ChessGame();
     setGrabbedPiece(null);
@@ -62,8 +62,8 @@ export default function ChessBoardComponent(props: Props) {
     setPlayerColor(true);
     setComputerHasMadeMove(false);
 
+
   }
-  console.log(chessGame.getPositionHistory());
 
   const chessboardRef = useRef<HTMLDivElement>(null);
 
@@ -89,9 +89,8 @@ export default function ChessBoardComponent(props: Props) {
   
   useEffect(() => {
     props.getAlgebraicNotation(chessGame.getPGN());
-  }, [props]);
+  }, [props, positionNumber]);
 
-  
   const fetchMoveFromBackend = async (fen: string, depth: number) => {
     try {
       const response = await fetch('http://localhost:3001/getMove', {
@@ -101,7 +100,7 @@ export default function ChessBoardComponent(props: Props) {
         },
         body: JSON.stringify({ fen, depth }),
       });
-  
+      
       const data = await response.json();
       const move = data.move;
       console.log(move);
@@ -168,16 +167,19 @@ export default function ChessBoardComponent(props: Props) {
 
   // Check the condition after the move is fetched and computerMove is updated
   if (playerColor !== chessGame.whoseTurn() && gameType === GameType.HumanVsComputer) {
-    const depth = 10;
+    const depth = 1;
 
     fetchMoveFromBackend(latestFen, depth).then(
       function(move) {  
-        if (playerColor === chessGame.whoseTurn()) return
+        if (playerColor === chessGame.whoseTurn() || chessGame.getCheckMate() || chessGame.getDraw()) return
         if (move === null || move === undefined) {
           alert("error in fetching move");
           return;
         }
         
+        move = move.replace(/\s/g, "");
+        
+        console.log(move);
         const position: Square = stockfishMoveToXY(move[0] + move[1]);
         const destination: Square = stockfishMoveToXY(move[2] + move[3]);
         
@@ -185,18 +187,23 @@ export default function ChessBoardComponent(props: Props) {
         if (piece === null) return;
 
         let successfulMove: boolean = false;
-
-        if (piece.symbol === "K" && Math.abs(position[0] - destination[0]) <= 2) {
+        console.log(Math.abs(position[0] - destination[0]))
+        if (piece.symbol === "K" && Math.abs(position[0] - destination[0]) >= 2) { // Castle
+          console.log("castle");
           if (chessGame.castleKing(piece, destination)) successfulMove = true;
         } 
-        else if (piece.symbol === "P" && Math.abs(position[0] - destination[0]) === 1 && chessGame.getBoard()[destination[0]][destination[1]] === null) {
+        else if (piece.symbol === "P" && Math.abs(position[0] - destination[0]) === 1 && chessGame.getBoard()[destination[0]][destination[1]] === null) { // En passant
+          console.log("en passant");
+
           if (chessGame.enPassant(piece, destination)) successfulMove = true;
         }
-        else if (piece.symbol === "P" && move.length === 5) {
-          if (chessGame.makePawnPromotion(move[4].toUpperCase, true, position, destination)) successfulMove = true;
+        else if (piece.symbol === "P" && move.length === 5) { // Promotion
+          console.log("promotion");
+
+          if (chessGame.makePawnPromotion(move[4].toUpperCase(), true, position, destination)) successfulMove = true;
 
         }
-        else {
+        else { // Regular move
           if (chessGame.makeMove(piece, destination)) successfulMove = true;
         }
 
@@ -209,8 +216,6 @@ export default function ChessBoardComponent(props: Props) {
         setPromotion(chessGame.getPromotion());
         props.getAlgebraicNotation(chessGame.getPGN());
         setComputerHasMadeMove(true);
-
-
       },
       function(error) { console.log(error); }
     )
@@ -259,13 +264,18 @@ export default function ChessBoardComponent(props: Props) {
 
         let marked = undefined
 
-        /*
-         op.forEach(move => {
-          if (move[0] === xy[0] && move[1] === xy[1]) {
-            marked = "#5203fc";
-          }
-        });
-        */
+        const markOpponentSquares = false;
+
+        const op = chessGame.getListOfOpponentMarkedSquares() as Square[];
+        
+        if (markOpponentSquares) {
+          op.forEach(move => {
+            if (move[0] === x && move[1] === y) {
+              marked = "#5203fc";
+            }
+          })
+        };
+          
         
         piecesToDisplayJSX.push(
           <Tile
