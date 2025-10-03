@@ -1,4 +1,4 @@
-import React, { ReactNode, CSSProperties, useState } from 'react';
+import React, { ReactNode, CSSProperties, useState, useEffect } from 'react';
 import { Piece } from '../Classes/ChessBoard';
 import './CSS/Tile.css';
 import ChessPiece from "./ChessPieceComponent"
@@ -13,6 +13,7 @@ interface TileProps {
   y: number
   color?: string
   sizeOverride?: number
+  unhighlightTrigger?: number
 
   onStartDragging: ((thisPiece: Piece | null, e: React.MouseEvent) => void) | undefined
   onDrop: ((x: number, y: number) => void) | undefined
@@ -23,6 +24,13 @@ interface TileProps {
 export default function Tile(props: TileProps) {
 
   const [highlightColor, setColor] = useState<string | undefined>();
+
+  // Effect to unhighlight tile when unhighlightTrigger changes
+  useEffect(() => {
+    if (props.unhighlightTrigger !== undefined && props.unhighlightTrigger > 0) {
+      setColor(undefined);
+    }
+  }, [props.unhighlightTrigger]);
 
 
   const drop = (grabbedPiece: Piece | null | undefined, e: React.MouseEvent) => {

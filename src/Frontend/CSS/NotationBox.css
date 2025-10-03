@@ -21,7 +21,7 @@
     position: absolute;
     left: 50%;
     top: 93%;
-    transform: translateX(-50%);
+    transform: translateX(-10%);
     margin-top: 10px;
     margin-bottom: 10px;
     user-select: none;

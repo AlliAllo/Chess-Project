@@ -48,6 +48,7 @@ export default function ChessBoardComponent(props: Props) {
   const [positionNumber, setPositionNumber] = useState<number>(0);
   const [playerColor, setPlayerColor] = useState<boolean>(true); // true = white, false = black
   const [computerHasMadeMove, setComputerHasMadeMove] = useState(false);
+  const [unHighlightAll, setUnhighlightAll] = useState(0);
 
   const { gameType } = useGameContext();
 
@@ -162,6 +163,11 @@ export default function ChessBoardComponent(props: Props) {
 
   function handleMouseClicks(e: React.MouseEvent) {
     if (promotion) revertPromotion();
+    
+    // Unhighlight all tiles on left click
+    if (e.button === 0) { // Left mouse button
+      setUnhighlightAll(prev => prev + 1);
+    }
   }
 
 
@@ -287,7 +293,8 @@ export default function ChessBoardComponent(props: Props) {
           x={x} y={y} 
           color={marked}
           key={x + y*8}
-          tileIsWhite={isWhite} ></Tile>
+          tileIsWhite={isWhite}
+          unhighlightTrigger={unHighlightAll} ></Tile>
         )
       
       }
