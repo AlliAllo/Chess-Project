@@ -918,6 +918,47 @@ export class ChessGame{
     }
 
 
+  /**
+   * Determines if disambiguation is needed for a move and returns the appropriate disambiguation string.
+   * @param pieceMoved The piece being moved
+   * @param destination The destination square
+   * @returns Disambiguation string (file, rank, or both) or empty string if not needed
+   */
+  getDisambiguation(pieceMoved: Piece, destination: Square): string {
+    // Only non-pawn pieces need disambiguation
+    if (pieceMoved.symbol === "P") return "";
+    
+    // Find all pieces of the same type and color that can move to the destination
+    const sameTypePieces = this.getListOfPiecesFromBoard().filter(piece => 
+      piece.symbol === pieceMoved.symbol && 
+      piece.white === pieceMoved.white && 
+      piece.legalMoves.some(move => move[0] === destination[0] && move[1] === destination[1])
+    );
+    
+    // If only one piece can make this move, no disambiguation needed
+    if (sameTypePieces.length <= 1) return "";
+    
+    // Check if pieces are on different files
+    const differentFiles = sameTypePieces.some(piece => piece.x !== pieceMoved.x);
+    
+    // Check if pieces are on different ranks
+    const differentRanks = sameTypePieces.some(piece => piece.y !== pieceMoved.y);
+    
+    let disambiguation = "";
+    
+    if (differentFiles) {
+      // Add file disambiguation (a-h)
+      disambiguation += String.fromCharCode(97 + pieceMoved.x);
+    }
+    
+    if (differentRanks) {
+      // Add rank disambiguation (1-8)
+      disambiguation += (pieceMoved.y + 1).toString();
+    }
+    
+    return disambiguation;
+  }
+
   addNotation(square: Square, pieceMoved: Piece, capture: boolean, castle: boolean | null, promotionPieceType?: string){
     // Move needs more information. We need to know exatcly which piece is moving. Not just the type of piece.
     const actualTurn = Math.ceil(this.turn/2)
@@ -939,8 +980,16 @@ export class ChessGame{
           this.PGN += pieceNotation
         }
       }
-
-      else this.PGN += pieceMoved.symbol // This is the piece that is moving.
+      else {
+        this.PGN += pieceMoved.symbol // This is the piece that is moving.
+        
+        // Add disambiguation if needed
+        const disambiguation = this.getDisambiguation(pieceMoved, square);
+        if (disambiguation) {
+          this.PGN += disambiguation;
+        }
+      }
+      
       if (capture) this.PGN += "x"
 
       this.PGN += squareNotation+(square[1]+1 ) // This is the location for the move.
