@@ -722,31 +722,34 @@ export class ChessGame{
 
     filterPieceMovesIfInCheck(piece: Piece): void {
       if (!this.check) return;
-      if (this.doubleCheck) {
-        this.doubleCheckFilterKingMoves(piece);
-      }
 
       // Limit movement of all pieces to the line of attack. Aka only let pieces block the check.
       const lineOfAttack = this.getLineOfAttack();
-      
-      this.getListOfPiecesFromBoard().forEach(piece => {
-        if (piece.symbol === "K") return;
-        if (this.kingAttacker?.symbol === "N") {  // Special case for knights.
-          piece.legalMoves = piece.legalMoves.filter(pieceMove => {
-            return pieceMove[0] === this.kingAttacker?.x && pieceMove[1] === this.kingAttacker?.y
+
+
+      if (this.doubleCheck) {
+        this.doubleCheckFilterKingMoves(piece);
+      }
+      else {
+        this.getListOfPiecesFromBoard().forEach(piece => {
+          if (piece.symbol === "K") return;
+          if (this.kingAttacker?.symbol === "N") {  // Special case for knights.
+            piece.legalMoves = piece.legalMoves.filter(pieceMove => {
+              return pieceMove[0] === this.kingAttacker?.x && pieceMove[1] === this.kingAttacker?.y
+            })
+          }
+          else {
+            piece.legalMoves = piece.legalMoves.filter(pieceMove => {
+              const adjustedLineOfAttack = lineOfAttack.slice(0, lineOfAttack.length-1) // Remove the last square from the line of attack. This is the square beyond the king.
+              return adjustedLineOfAttack.some(square => pieceMove[0] === square[0] && pieceMove[1] === square[1])   
+            })}
           })
         }
-        else {
-          piece.legalMoves = piece.legalMoves.filter(pieceMove => {
-            const adjustedLineOfAttack = lineOfAttack.slice(0, lineOfAttack.length-1) // Remove the last square from the line of attack. This is the square beyond the king.
-            return adjustedLineOfAttack.some(square => pieceMove[0] === square[0] && pieceMove[1] === square[1])   
-          })
-        }
-      })
+
       console.log(piece)
       // Allow the king to move OUT of the line of attack. Opposite of all other pieces.
       piece.legalMoves = piece.legalMoves.filter(kingMove => {
-        if (kingMove[0] === this.kingAttacker?.x && kingMove[1] === this.kingAttacker?.y) return true; // If the king can capture the attacker, then it can do so.
+        if (kingMove[0] === this.kingAttacker?.x && kingMove[1] === this.kingAttacker?.y) return true; // If the king can capture the attacker, then allow it to do so.
         return !lineOfAttack.some(square => kingMove[0] === square[0] && kingMove[1] === square[1])   
       })
 
