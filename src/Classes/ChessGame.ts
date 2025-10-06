@@ -617,8 +617,26 @@ export class ChessGame{
         moveList.forEach(move => {
           if (move[0] === kingPosition[0] && move[1] === kingPosition[1]) {
             this.check = true;
-            if (this.kingAttacker !== null) this.doubleCheck = true;
-            this.kingAttacker = piece
+            if (this.kingAttacker !== null) {
+              this.doubleCheck = true;
+              console.log("Double check")
+              // When a double check is detected, add the new attacker's legal moves to the marked squares.
+
+              // Add the lineofattack addional square to the list of opponent marked squares. 
+              // This needs to be done before updating the attacker. This avoids the redundance of having to track 2 attackers.
+              const lineOfAttack = this.getLineOfAttack();
+
+              // Remove the attackers square from the line of attack. 
+              // This is done due to the fact that the king might be able to capture the attacker.
+              const lineOfAttackWithoutAttackerSquare = lineOfAttack.slice(1); 
+            
+              this.listOfOpponentMarkedSquares.push(...lineOfAttackWithoutAttackerSquare);
+              this.mapOfOpponentMarkedSquares.set(this.kingAttacker!, lineOfAttackWithoutAttackerSquare);
+
+              this.kingAttacker = piece;
+            } 
+
+            this.kingAttacker = piece;
           }
         }) 
       })
@@ -643,11 +661,8 @@ export class ChessGame{
           this.pawnOpponentSquares(piece);
           return;
         }
-        for (let z = 0; z < piece.legalMoves.length; z++){
-          const move = piece.legalMoves[z];
-          this.listOfOpponentMarkedSquares.push(move);
-          this.mapOfOpponentMarkedSquares.set(piece, piece.legalMoves);
-        }
+        this.listOfOpponentMarkedSquares.push(...piece.legalMoves);
+        this.mapOfOpponentMarkedSquares.set(piece, piece.legalMoves);
       })
     }
 
@@ -679,7 +694,7 @@ export class ChessGame{
       direction[1] = y < 0 ? -1 : y > 0 ? 1 : 0;
 
       const lineOfAttack: Square[] = []
-      lineOfAttack.push([attacker.x, attacker.y]) // Add attackers position to the line of attack.
+      lineOfAttack.push([attacker.x, attacker.y]) // Add attackers position to the line of attack. Useful for enabling the capture of the attacker.
 
       // We aren't afraid of going out of bounds here, since we are only looking at the line of attack. This ends up making the code a lot simpler.
       for (let i = 1; i <= 7; i++){
@@ -709,7 +724,6 @@ export class ChessGame{
       if (!this.check) return;
       if (this.doubleCheck) {
         this.doubleCheckFilterKingMoves(piece);
-        return;
       }
 
       // Limit movement of all pieces to the line of attack. Aka only let pieces block the check.
