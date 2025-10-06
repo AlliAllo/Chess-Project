@@ -8,8 +8,8 @@ router.use(express.json());
 router.post('/getMove', async (req, res) => {
   async function getMove() {
     try {
-        const { fen, depth } = req.body;
-        const move = await ask(fen, depth);
+        const { fen, elo } = req.body;
+        const move = await ask(fen, elo);
         res.json({ move });
     } catch (error) {
         console.error("Error:", error);

@@ -17,6 +17,7 @@ interface TileProps {
 
   onStartDragging: ((thisPiece: Piece | null, e: React.MouseEvent) => void) | undefined
   onDrop: ((x: number, y: number) => void) | undefined
+  onPieceClick?: ((thisPiece: Piece | null, e: React.MouseEvent) => void) | undefined
   onPromotionClick?: (promotion: string) => void
 }
   
@@ -91,7 +92,7 @@ export default function Tile(props: TileProps) {
     onMouseUp={e => drop(props.grabbedPiece, e)} 
     //onMouseDown={selectedTile}
     onContextMenu={e => highlightTile(e)}>
-        {props.piece  && <ChessPiece piece={props.piece}  onStartDragging={props.onStartDragging} onPromotionClick={props.onPromotionClick}/>}
+        {props.piece  && <ChessPiece piece={props.piece}  onStartDragging={props.onStartDragging} onPieceClick={props.onPieceClick} onPromotionClick={props.onPromotionClick}/>}
         {props.legalTile && <div className="legalTile"></div>}
         {props.y === 0 && <div style={NotationStyle} className="xNotation">{xNotation[props.x]}</div>}
         {props.x === 0 && <div style={NotationStyle} className="yNotation">{props.y+1}</div>}

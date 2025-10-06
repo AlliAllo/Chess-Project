@@ -203,6 +203,8 @@ export class ChessGame{
       this.chessBoard[newKingPosition][piece.y] = newKing;
       this.chessBoard[newRookPosition][piece.y] = newRook;
 
+      console.log(this.chessBoard[newKingPosition][piece.y]?.hasMoved)
+
       this.turn++;
       this.addNotation(move, piece, false, !leftSideCastling);
       this.updateGameAfterMove(newKing, false);
@@ -793,7 +795,7 @@ export class ChessGame{
       }) 
     }
 
-    addCasltingMoves(king: Piece): void {
+    addCastlingMoves(king: Piece): void {
       if (this.check) return;
       if (king.hasMoved === true) return;
        // Left side castling
@@ -910,7 +912,7 @@ export class ChessGame{
       this.filterPieceMovesIfInCheck(king);
       this.filterPinnedPiecesMoves();
 
-      this.addCasltingMoves(king);
+      this.addCastlingMoves(king);
 
       this.checkForCheckMateOrDraw();
 

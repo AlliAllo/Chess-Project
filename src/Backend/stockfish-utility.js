@@ -1,7 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-function ask(fen, depth) {
+function ask(fen, elo) {
     return new Promise((resolve, reject) => {
         const stockfishPath = path.join(__dirname, '../stockfish/stockfish_app.exe');
         const stockfish = spawn(stockfishPath);
@@ -28,7 +28,20 @@ function ask(fen, depth) {
         });
 
         stockfish.stdin.write(`position fen ${fen}\n`);
-        stockfish.stdin.write(`go depth ${depth}\n`);
+
+        // Set the difficulty of the stockfish engine. (Anything below 1320 requires some adjustments to the "skill" option)
+        if (elo < 1320) {
+            const skill = Math.round((elo / 1320) * 5); 
+            stockfish.stdin.write(`setoption name Skill Level value ${skill}\n`);
+        } else {
+            stockfish.stdin.write('setoption name UCI_LimitStrength value true\n');
+            stockfish.stdin.write(`setoption name UCI_Elo value ${elo}\n`);
+        }
+
+        stockfish.stdin.write(`position fen ${fen}\n`);
+        stockfish.stdin.write('go movetime 100\n'); // 100 milliseconds
+         
+
                 
     });
 }

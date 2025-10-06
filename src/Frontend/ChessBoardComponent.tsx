@@ -49,8 +49,16 @@ export default function ChessBoardComponent(props: Props) {
   const [playerColor, setPlayerColor] = useState<boolean>(true); // true = white, false = black
   const [computerHasMadeMove, setComputerHasMadeMove] = useState(false);
   const [unHighlightAll, setUnhighlightAll] = useState(0);
+  const [lastMove, setLastMove] = useState<{from: Square, to: Square} | null>(null);
+  const [selectedPiece, setSelectedPiece] = useState<Piece | null>(null);
 
   const { gameType } = useGameContext();
+
+  // Color constants for move highlighting
+  const MOVE_COLORS = {
+    LIGHT: '#b9ca43',
+    DARK: '#f5f682'
+  };
 
 
   const resetGame = () => {
@@ -62,8 +70,8 @@ export default function ChessBoardComponent(props: Props) {
     setPositionNumber(0);
     setPlayerColor(true);
     setComputerHasMadeMove(false);
-
-
+    setLastMove(null);
+    setSelectedPiece(null);
   }
 
   const chessboardRef = useRef<HTMLDivElement>(null);
@@ -92,17 +100,18 @@ export default function ChessBoardComponent(props: Props) {
     props.getAlgebraicNotation(chessGame.getPGN());
   }, [props, positionNumber]);
 
-  const fetchMoveFromBackend = async (fen: string, depth: number) => {
+  const fetchMoveFromBackend = async (fen: string, elo: number) => {
     try {
       const response = await fetch('http://localhost:3001/getMove', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ fen, depth }),
+        body: JSON.stringify({ fen, elo }),
       });
       
       const data = await response.json();
+      console.log(data)
       const move = data.move;
       console.log(move);
       return move;
@@ -117,19 +126,52 @@ export default function ChessBoardComponent(props: Props) {
     move(e);
       }, [setGrabbedPiece]);
 
+  const onPieceClick = useCallback((thisPiece: Piece | null, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!thisPiece) return;
+    
+    const isCorrectColor: Boolean = chessGame.whoseTurn() === playerColor;
+    const isSingleHuman: Boolean = gameType === GameType.SingleHuman;
+    const isInLatestFen: Boolean = chessGame.getPositionHistory().length - 1 === positionNumber;
+    
+    // Only allow selecting pieces if it's the correct turn
+    if (isInLatestFen && (isCorrectColor || isSingleHuman) && !promotion) {
+      setSelectedPiece(thisPiece);
+    }
+  }, [playerColor, gameType, positionNumber, promotion]);
+
 
   // This is where we drop the piece. Very important function :)
   const onDrop = useCallback((x: number, y: number) => {
-    if (!(grabbedPiece)) return;
     const isCorrectColor: Boolean = chessGame.whoseTurn() === playerColor;
     const isSingleHuman: Boolean = gameType === GameType.SingleHuman;
     const isInLatestFen: Boolean = chessGame.getPositionHistory().length - 1 === positionNumber;
 
-    if (isInLatestFen && (isCorrectColor || isSingleHuman) && !promotion && chessGame.makeMove(grabbedPiece, [x, y])) {
-      // Call the usecallback hook to update the notation of the game.
-      props.getAlgebraicNotation(chessGame.getPGN())
-      setPositionNumber(chessGame.getPositionHistory().length - 1);
+    // Handle piece selection (click to select, then click destination)
+    if (selectedPiece && !grabbedPiece) {
+      if (isInLatestFen && (isCorrectColor || isSingleHuman) && !promotion && chessGame.makeMove(selectedPiece, [x, y])) {
+        // Track the last move for highlighting
+        setLastMove({from: [selectedPiece.x, selectedPiece.y], to: [x, y]});
+        // Call the usecallback hook to update the notation of the game.
+        props.getAlgebraicNotation(chessGame.getPGN())
+        setPositionNumber(chessGame.getPositionHistory().length - 1);
+        setSelectedPiece(null); // Clear selection after move
+      }
     }
+    // Handle drag and drop
+    else if (grabbedPiece) {
+      if (isInLatestFen && (isCorrectColor || isSingleHuman) && !promotion && chessGame.makeMove(grabbedPiece, [x, y])) {
+        // Track the last move for highlighting
+        setLastMove({from: [grabbedPiece.x, grabbedPiece.y], to: [x, y]});
+        // Call the usecallback hook to update the notation of the game.
+        props.getAlgebraicNotation(chessGame.getPGN())
+        setPositionNumber(chessGame.getPositionHistory().length - 1);
+        setSelectedPiece(null); // Clear selection after move
+      }
+    }
+    
     setAttacker(chessGame.getAttacker());
     setCheck(chessGame.getCheck());
     setGrabbedPiece(null);
@@ -138,7 +180,7 @@ export default function ChessBoardComponent(props: Props) {
 
     if (chessGame.getPromotion()) promotionSquareX = x;
 
-  }, [grabbedPiece, playerColor, gameType, positionNumber, promotion, props]);
+  }, [grabbedPiece, selectedPiece, playerColor, gameType, positionNumber, promotion, props]);
 
   const onPromotionSelect = useCallback((promotionType: string) => {
     chessGame.makePawnPromotion(promotionType, false);
@@ -167,15 +209,17 @@ export default function ChessBoardComponent(props: Props) {
     // Unhighlight all tiles on left click
     if (e.button === 0) { // Left mouse button
       setUnhighlightAll(prev => prev + 1);
+      // Clear selected piece when clicking on empty area
+      setSelectedPiece(null);
     }
   }
 
 
   // Check the condition after the move is fetched and computerMove is updated
   if (playerColor !== chessGame.whoseTurn() && gameType === GameType.HumanVsComputer) {
-    const depth = 1;
+    const elo = 700;
 
-    fetchMoveFromBackend(latestFen, depth).then(
+    fetchMoveFromBackend(latestFen, elo).then(
       function(move) {  
         if (playerColor === chessGame.whoseTurn() || chessGame.getCheckMate() || chessGame.getDraw()) return
         if (move === null || move === undefined) {
@@ -214,6 +258,7 @@ export default function ChessBoardComponent(props: Props) {
         }
 
         if (successfulMove) {
+          setLastMove({from: position, to: destination});
           setPositionNumber(chessGame.getPositionHistory().length - 1);
         }
 
@@ -240,11 +285,13 @@ export default function ChessBoardComponent(props: Props) {
       const position = chessGame.getPositionHistory()[positionNumber - 1];
       setPositionNumber(positionNumber - 1);
       chessGame.setChessBoard(position);
+      setLastMove(null); // Clear last move when navigating
     }
     if (back === false && positionNumber < chessGame.getPositionHistory().length - 1) {
       const position = chessGame.getPositionHistory()[positionNumber + 1];
       setPositionNumber(positionNumber + 1);
       chessGame.setChessBoard(position);
+      setLastMove(null); // Clear last move when navigating
     }
   }
   
@@ -281,17 +328,37 @@ export default function ChessBoardComponent(props: Props) {
             }
           })
         };
+
+        // Check if this tile should be highlighted for last move
+        let lastMoveHighlight = undefined;
+        if (lastMove) {
+          if ((lastMove.from[0] === x && lastMove.from[1] === y) || 
+              (lastMove.to[0] === x && lastMove.to[1] === y)) {
+            lastMoveHighlight = isWhite ? MOVE_COLORS.LIGHT : MOVE_COLORS.DARK;
+          }
+        }
+
+        // Check if this tile should be highlighted for selected piece
+        let selectedHighlight = undefined;
+        if (selectedPiece && selectedPiece.x === x && selectedPiece.y === y) {
+          selectedHighlight = isWhite ? MOVE_COLORS.LIGHT : MOVE_COLORS.DARK;
+        }
+
+        // Use last move highlight if available, otherwise use selected piece highlight
+        const highlightColor = lastMoveHighlight || selectedHighlight || marked;
           
         
         piecesToDisplayJSX.push(
           <Tile
           piece={piece}
-          legalTile={grabbedPiece?.legalMoves.some(a => a[0] === x && a[1] === y)}
+          legalTile={grabbedPiece?.legalMoves.some(a => a[0] === x && a[1] === y) || 
+                   (selectedPiece ? selectedPiece.legalMoves.some(a => a[0] === x && a[1] === y) : false)}
           grabbedPiece={grabbedPiece}
           onStartDragging={onStartDragging}
           onDrop={onDrop}
+          onPieceClick={onPieceClick}
           x={x} y={y} 
-          color={marked}
+          color={highlightColor}
           key={x + y*8}
           tileIsWhite={isWhite}
           unhighlightTrigger={unHighlightAll} ></Tile>
