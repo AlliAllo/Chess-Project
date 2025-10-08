@@ -1,0 +1,114 @@
+.signupContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: radial-gradient(circle at top, #1c1f26 0%, #0f1117 100%);
+  font-family: 'Poppins', sans-serif;
+}
+
+.signupForm {
+  background-color: #1e2230;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 2.5rem 3rem;
+  width: 340px;
+  text-align: center;
+  color: #f1f1f1;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Smooth fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.signupForm h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.signupForm input {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.6rem 0;
+  border: none;
+  border-radius: 8px;
+  background-color: #2a2e3d;
+  color: #fff;
+  font-size: 1rem;
+  transition: background 0.3s;
+}
+
+
+
+
+.signupButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+  width: 100%;
+  background: linear-gradient(90deg, #4caf50, #81b64c);
+  border: none;
+  border-radius: 8px;
+  margin-top: 10px;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.1s ease;
+
+}
+
+.signupButton:hover {
+  background-color: #6aa33b;
+}
+
+.signupMessage {
+  margin-top: 15px;
+  color: white;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: #81b64c;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: -10px;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+.rememberMeLabel {
+  color: white;
+  font-size: 0.9rem;
+  margin-left: 5px;
+}
+
+.redirectText {
+  color: #ccc;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: -1rem;
+}
+
+.redirectText a {
+  color: #81b64c;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.redirectText a:hover {
+  text-decoration: underline;
+}

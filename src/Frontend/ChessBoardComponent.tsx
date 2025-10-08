@@ -54,6 +54,9 @@ export default function ChessBoardComponent(props: Props) {
 
   const { gameType } = useGameContext();
 
+  const token = localStorage.getItem("token");
+
+
   // Color constants for move highlighting
   const MOVE_COLORS = {
     LIGHT: '#b9ca43',
@@ -100,9 +103,43 @@ export default function ChessBoardComponent(props: Props) {
     props.getAlgebraicNotation(chessGame.getPGN());
   }, [props, positionNumber]);
 
+  useEffect(() => {
+  const logGame = async () => {
+    if (!token) return; // not logged in
+    
+
+    try {
+      const res = await fetch('https://localhost:3001/games/new', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          PGN: chessGame.getPGN(),
+          result: chessGame.getCheckMate()
+            ? (playerColor ? '0-1' : '1-0')
+            : '1/2-1/2'
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) console.log('Game logged!', data.game._id);
+    } catch (err) {
+      console.error('Error logging game:', err);
+    }
+  }
+
+  if (chessGame.getCheckMate() || chessGame.getDraw()) {
+    logGame();
+  }
+}, [positionNumber]);
+
+
+
   const fetchMoveFromBackend = async (fen: string, elo: number) => {
     try {
-      const response = await fetch('http://localhost:3001/getMove', {
+      const response = await fetch('https://localhost:3001/getMove', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +148,6 @@ export default function ChessBoardComponent(props: Props) {
       });
       
       const data = await response.json();
-      console.log(data)
       const move = data.move;
       console.log(move);
       return move;
@@ -213,7 +249,6 @@ export default function ChessBoardComponent(props: Props) {
       setSelectedPiece(null);
     }
   }
-
 
   // Check the condition after the move is fetched and computerMove is updated
   if (playerColor !== chessGame.whoseTurn() && gameType === GameType.HumanVsComputer) {

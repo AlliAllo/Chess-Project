@@ -1,0 +1,150 @@
+.loginContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: radial-gradient(circle at top, #1c1f26 0%, #0f1117 100%);
+  font-family: 'Poppins', sans-serif;
+}
+
+.loginForm {
+  background-color: #1e2230;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: 2.5rem 3rem;
+  width: 340px;
+  text-align: center;
+  color: #f1f1f1;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Smooth fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loginForm h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.loginForm input[type="text"],
+.loginForm input[type="password"] {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.6rem 0;
+  border: none;
+  border-radius: 8px;
+  background-color: #2a2e3d;
+  color: #fff;
+  font-size: 1rem;
+  transition: background 0.3s;
+}
+
+.loginForm input[type="text"]:focus,
+.loginForm input[type="password"]:focus {
+  background-color: #353b4d;
+  outline: none;
+}
+
+/* Remember me */
+.rememberMeLabel {
+  font-size: 0.9rem;
+  margin-left: 0.4rem;
+  color: #c9c9c9;
+}
+
+.loginForm input[type="checkbox"] {
+  accent-color: #4caf50;
+  transform: scale(1.1);
+  margin-top: 0.8rem;
+}
+
+.loginButton {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #4caf50, #2e7d32);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.loginButton:hover {
+  background: linear-gradient(90deg, #5edc63, #3fa047);
+}
+
+.loginButton:active {
+  transform: scale(0.98);
+}
+
+/* Message (success or error) */
+.loginMessage {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #ffc107;
+}
+
+/* Signup link text */
+.signupPrompt {
+  margin-top: 1.2rem;
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+.signupPrompt a {
+  color: #4caf50;
+  text-decoration: none;
+  margin-left: 0.3rem;
+  font-weight: 500;
+}
+
+.signupPrompt a:hover {
+  text-decoration: underline;
+}
+
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  width: 100%;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #ccc; /* line color */
+}
+
+.divider::before {
+  margin-right: 10px;
+}
+
+.divider::after {
+  margin-left: 10px;
+}
+
+.divider span {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.googleButtonWrapper {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.googleButtonWrapper > div {
+  width: 100% !important; /* forces the Google button to stretch */
+  display: flex !important;
+  justify-content: center; /* optional, centers text/icon */
+}

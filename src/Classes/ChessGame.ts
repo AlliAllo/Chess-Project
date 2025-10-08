@@ -185,7 +185,7 @@ export class ChessGame{
     }
 
     castleKing(piece: Piece, move: Square): boolean {
-      if (piece.symbol !== "K" || piece.hasMoved === true || !(move[0] >= 6 || move[0] <= 2) || this.check) return false;
+      if (piece.symbol.toUpperCase() !== "K" || piece.hasMoved === true || !(move[0] >= 6 || move[0] <= 2) || this.check) return false;
       
       const row = piece.white ? 0 : 7;
       const leftSideCastling = move[0] < 4
@@ -203,11 +203,10 @@ export class ChessGame{
       this.chessBoard[newKingPosition][piece.y] = newKing;
       this.chessBoard[newRookPosition][piece.y] = newRook;
 
-      console.log(this.chessBoard[newKingPosition][piece.y]?.hasMoved)
 
       this.turn++;
-      this.addNotation(move, piece, false, !leftSideCastling);
       this.updateGameAfterMove(newKing, false);
+      this.addNotation(move, piece, false, !leftSideCastling);
 
       console.log(newKing)
       console.log(this.chessBoard[newKingPosition][piece.y])
@@ -262,8 +261,8 @@ export class ChessGame{
       this.chessBoard[move[0]][move[1]] = newPiece;
 
       this.turn++;
-      this.addNotation(move, piece, capture, null, newPieceType);
       this.updateGameAfterMove(newPiece, capture);
+      this.addNotation(move, piece, capture, null, newPieceType);
 
       return true;
     }
@@ -290,6 +289,7 @@ export class ChessGame{
       }
 
 
+
       const enPassant = this.enPassant(piece, move);
       const castling = this.castleKing(piece, move);
 
@@ -302,10 +302,9 @@ export class ChessGame{
         this.chessBoard[piece.x][piece.y] = null; 
         this.chessBoard[move[0]][move[1]] = newPiece;
 
-        this.addNotation(move, piece, capture, null);
-
         this.checkIfPawnMakesDoubleMove(piece, move);
         this.updateGameAfterMove(newPiece, capture);  
+        this.addNotation(move, piece, capture, null);
       }
 
       return true;
@@ -319,7 +318,10 @@ export class ChessGame{
       this.doubleCheck = false;
       this.promotion = false;
       this.promotionInformation = null;
+
+      console.log(piece.hasMoved)
       this.calcLegalMoves();
+      console.log("After:", this.chessBoard[piece.x][piece.y]?.hasMoved);
 
       this.doubleSquarePawnMove = false;
       this.doubleSquarePawnXPosition = 0;
@@ -979,7 +981,6 @@ export class ChessGame{
   }
 
   addNotation(square: Square, pieceMoved: Piece, capture: boolean, castle: boolean | null, promotionPieceType?: string){
-    // Move needs more information. We need to know exatcly which piece is moving. Not just the type of piece.
     const actualTurn = Math.ceil(this.turn/2)
 
     const pieceNotation = String.fromCharCode(97 + pieceMoved.x)
@@ -1015,13 +1016,13 @@ export class ChessGame{
     }
 
 
-    if (this.check) this.PGN += "+"
+    if (this.check || this.doubleCheck) this.PGN += "+"
+    else if (this.checkMate) this.PGN += "#"
     if (promotionPieceType) this.PGN += "=" + promotionPieceType;
 
     this.PGN += " "
 
     // Check for checkmate, draw, or win.
-    if (this.checkMate) this.PGN += "#"
     
     if (this.draw) this.PGN += "1/2-1/2"
     if (this.winner) this.PGN += "1-0"
