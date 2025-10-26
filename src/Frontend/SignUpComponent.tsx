@@ -30,10 +30,6 @@ export default function Signup() {
       return;
     }
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      alert("That email looks off. I'll let you off the hook this time tho.");
-    }
-
     if (username.length < 3 || username.length > 20) {
       setMessage("Username must be between 3 and 20 characters.");
       return;
@@ -45,8 +41,11 @@ export default function Signup() {
     }
 
     if (password === password.toLowerCase()) {
-      setMessage(`No capital letter in the big ${new Date().getFullYear()} is crazy work.`);
-      return;
+      alert(`No capital letter in the big ${new Date().getFullYear()} is crazy work. Probably fine 🤷‍♂️`);
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      alert("That email looks off. I'll let you off the hook this time tho.");
     }
       
 

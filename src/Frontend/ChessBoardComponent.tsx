@@ -36,7 +36,10 @@ export enum GameType {
   SingleHuman = "Single Human",
 }
 
-let chessGame = new ChessGame();
+
+const fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
+//const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+let chessGame = new ChessGame({ fen: fen }) // true for lightWeightMode
 
 export default function ChessBoardComponent(props: Props) {
   const ghostPiece = useRef<HTMLDivElement>(null);
@@ -51,6 +54,7 @@ export default function ChessBoardComponent(props: Props) {
   const [unHighlightAll, setUnhighlightAll] = useState(0);
   const [lastMove, setLastMove] = useState<{from: Square, to: Square} | null>(null);
   const [selectedPiece, setSelectedPiece] = useState<Piece | null>(null);
+  const [ fenPosition, setFenPosition ] = useState<string>(fen);
 
   const { gameType } = useGameContext();
 
@@ -65,7 +69,8 @@ export default function ChessBoardComponent(props: Props) {
 
 
   const resetGame = () => {
-    chessGame = new ChessGame();
+
+    chessGame = new ChessGame({fen: fenPosition});
     setGrabbedPiece(null);
     setPromotion(false);
     setCheck(false);
@@ -285,7 +290,7 @@ export default function ChessBoardComponent(props: Props) {
         else if (piece.symbol === "P" && move.length === 5) { // Promotion
           console.log("promotion");
 
-          if (chessGame.makePawnPromotion(move[4].toUpperCase(), true, position, destination)) successfulMove = true;
+          if (chessGame.makePawnPromotion(move[4].toUpperCase(), true, {position: position, destination : destination})) successfulMove = true;
 
         }
         else { // Regular move
@@ -352,7 +357,7 @@ export default function ChessBoardComponent(props: Props) {
 
         let marked = undefined
 
-        const markOpponentSquares = false;
+        const markOpponentSquares = true;
 
         const op = chessGame.getListOfOpponentMarkedSquares() as Square[];
         

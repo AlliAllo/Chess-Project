@@ -59,7 +59,7 @@ export default function PawnPromotion(props: PromotionOptionsProps) {
 
     const imageURL = symbolToImageURL.get(symbol)?.get(props.whoIsPromoting) as string;
     const upOrDown = props.whoIsPromoting ? -1 : 1;
-    const piece: Piece = {imageURL: imageURL, x: props.promotionSquareX, y: row+i*upOrDown, value: undefined, white: props.whoIsPromoting, hasMoved: undefined, symbol: symbol, legalMoves: []}
+    const piece: Piece = {imageURL: imageURL, x: props.promotionSquareX, y: row+i*upOrDown, value: undefined, white: props.whoIsPromoting, symbol: symbol, legalMoves: []}
     piecesToDisplayJSX.push(
       <Tile
       piece={piece}

@@ -68,13 +68,6 @@ export default function Menu(props: MenuOptions) {
       {!isSignedIn ? (
         <>
           <button
-            className="signUpButton"
-            onClick={() => navigate("/signup")}
-          >
-            <div className="signUpText">Sign Up</div>
-          </button>
-
-          <button
             className="loginButtonMenu"
             onClick={() => navigate("/login")}
           >
